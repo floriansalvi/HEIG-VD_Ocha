@@ -1,7 +1,7 @@
 <template>
-  <main class="account">
+  <main class="page">
     <h1>Mon compte</h1>
-    <p>Page de compte à venir (profil, logout, etc.).</p>
+    <p>Profil / déconnexion à venir.</p>
 
     <router-link to="/login">Se connecter</router-link>
     <span> · </span>
@@ -10,11 +10,10 @@
 </template>
 
 <script setup>
-// On ajoutera plus tard la logique avec le store auth (Pinia)
 </script>
 
 <style scoped>
-.account {
+.page {
   padding-top: 24px;
 }
 </style>

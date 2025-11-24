@@ -1,19 +1,14 @@
 <template>
-  <div class="auth-page">
-    <div class="auth-page__bg">
-      <div class="auth-page__overlay"></div>
-<h1>sucemon</h1>
-      <!-- Logo -->
+  <div class="auth-wrapper">
+    <div class="auth-phone">
       <div class="auth-logo">
-        <img src="@/assets/logoOcha.png" alt="Ocha logo" />
+        <img src="@/assets/logo-ocha.png" alt="Ocha logo" />
       </div>
 
-      <!-- Contenu -->
-      <div class="auth-page__content">
-        <section class="auth-card">
+      <div class="auth-panel">
+        <div class="auth-panel-content">
           <h1 class="auth-title">Sign up</h1>
 
-          <!-- Tabs phone / email -->
           <div class="auth-tabs">
             <button
               type="button"
@@ -35,71 +30,81 @@
 
           <form class="auth-form" @submit.prevent="onSubmit">
             <div>
-              <div class="auth-field-label">first name</div>
-              <div class="auth-input-wrapper">
+              <div class="auth-field-label">
+                <span>first name</span>
+              </div>
+              <div class="auth-input-line">
                 <input
                   v-model="firstName"
                   type="text"
-                  required
                   placeholder="First name"
+                  required
                 />
               </div>
             </div>
 
             <div>
-              <div class="auth-field-label">last name</div>
-              <div class="auth-input-wrapper">
+              <div class="auth-field-label">
+                <span>last name</span>
+              </div>
+              <div class="auth-input-line">
                 <input
                   v-model="lastName"
                   type="text"
-                  required
                   placeholder="Last name"
+                  required
                 />
               </div>
             </div>
 
             <div v-if="mode === 'email'">
-              <div class="auth-field-label">email</div>
-              <div class="auth-input-wrapper">
+              <div class="auth-field-label">
+                <span>email</span>
+              </div>
+              <div class="auth-input-line">
                 <input
                   v-model="email"
                   type="email"
-                  required
                   autocomplete="email"
                   placeholder="you@matcha.ch"
+                  required
                 />
               </div>
             </div>
 
             <div v-else>
-              <div class="auth-field-label">phone number</div>
-              <div class="auth-input-wrapper">
+              <div class="auth-field-label">
+                <span>phone number</span>
+              </div>
+              <div class="auth-input-line">
                 <input
                   v-model="phone"
                   type="tel"
                   inputmode="tel"
-                  required
                   placeholder="+41..."
+                  required
                 />
               </div>
             </div>
 
             <div>
-              <div class="auth-field-label">password</div>
-              <div class="auth-input-wrapper">
+              <div class="auth-field-label">
+                <span>password</span>
+              </div>
+              <div class="auth-input-line">
                 <input
                   v-model="password"
                   type="password"
-                  required
                   autocomplete="new-password"
                   placeholder="••••••••"
+                  required
                 />
               </div>
             </div>
 
             <p v-if="error" class="auth-error">{{ error }}</p>
 
-            <button type="submit" class="auth-primary-btn">
+            <button class="auth-primary-btn" type="submit">
               sign up
             </button>
           </form>
@@ -108,7 +113,7 @@
             already have an account?
             <RouterLink to="/login">Log in</RouterLink>
           </p>
-        </section>
+        </div>
       </div>
     </div>
   </div>
@@ -118,7 +123,6 @@
 import { ref } from 'vue';
 
 const mode = ref('email');
-
 const firstName = ref('');
 const lastName = ref('');
 const email = ref('');
@@ -126,7 +130,6 @@ const phone = ref('');
 const password = ref('');
 const error = ref('');
 
-// TODO: à connecter avec ton backend / store Pinia
 const onSubmit = () => {
   error.value = '';
 
@@ -145,15 +148,12 @@ const onSubmit = () => {
     return;
   }
 
-  const payload = {
+  console.log('REGISTER', {
+    mode: mode.value,
     firstName: firstName.value,
     lastName: lastName.value,
-    password: password.value,
-    ...(mode.value === 'email'
-      ? { email: email.value }
-      : { phone: phone.value }),
-  };
-
-  console.log('Register payload', payload);
+    email: email.value,
+    phone: phone.value,
+  });
 };
 </script>
