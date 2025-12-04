@@ -1,25 +1,25 @@
 <template>
-  <div class="app">
-    <RouterView class="view" />
-    <BottomNav />
+  <div class="phone-wrapper">
+    <div class="phone-shell">
+      <!-- Contenu scrollable à l'intérieur du "téléphone" -->
+      <div class="phone-content">
+        <RouterView />
+      </div>
+
+      <!-- Bottom nav seulement si on n'est pas sur login / register -->
+      <BottomNav v-if="showBottomNav" />
+    </div>
   </div>
 </template>
 
 <script setup>
-import { RouterView } from 'vue-router';
+import { RouterView, useRoute } from 'vue-router';
+import { computed } from 'vue';
 import BottomNav from './components/BottomNav.vue';
+
+const route = useRoute();
+
+const showBottomNav = computed(
+  () => !['login', 'register'].includes(route.name)
+);
 </script>
-
-<style>
-.app {
-  min-height: 100vh;
-  padding-bottom: 56px; /* place pour la bottom nav */
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  background: #faf6f0;
-  box-sizing: border-box;
-}
-
-.view {
-  padding: 16px;
-}
-</style>

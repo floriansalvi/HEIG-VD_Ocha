@@ -1,113 +1,112 @@
 <template>
-  <div class="auth-wrapper">
-    <div class="auth-phone">
+  <div class="auth-screen">
+    <div class="auth-bg">
       <div class="auth-logo">
-        <!-- on utilise maintenant :src="logo" -->
         <img :src="logo" alt="Ocha logo" />
       </div>
+    </div>
 
-      <div class="auth-panel">
-        <div class="auth-panel-content">
-          <h1 class="auth-title">Log in</h1>
+    <div class="auth-panel">
+      <div class="auth-panel-content">
+        <h1 class="auth-title">Log in</h1>
 
-          <div class="auth-tabs">
-            <button
-              type="button"
-              class="auth-tab"
-              :class="{ 'auth-tab--active': mode === 'phone' }"
-              @click="mode = 'phone'"
-            >
-              phone
-            </button>
-            <button
-              type="button"
-              class="auth-tab"
-              :class="{ 'auth-tab--active': mode === 'email' }"
-              @click="mode = 'email'"
-            >
-              email
-            </button>
-          </div>
-
-          <form class="auth-form" @submit.prevent="onSubmit">
-            <template v-if="mode === 'email'">
-              <div>
-                <div class="auth-field-label">
-                  <span>email</span>
-                </div>
-                <div class="auth-input-line">
-                  <input
-                    v-model="email"
-                    type="email"
-                    autocomplete="email"
-                    placeholder="you@matcha.ch"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <div class="auth-field-label">
-                  <span>password</span>
-                  <a href="#" class="auth-forgot">Forgot ?</a>
-                </div>
-                <div class="auth-input-line">
-                  <input
-                    v-model="password"
-                    type="password"
-                    autocomplete="current-password"
-                    placeholder="••••••••"
-                    required
-                  />
-                </div>
-              </div>
-            </template>
-
-            <template v-else>
-              <div>
-                <div class="auth-field-label">
-                  <span>phone number</span>
-                </div>
-                <div class="auth-input-line">
-                  <input
-                    v-model="phone"
-                    type="tel"
-                    inputmode="tel"
-                    placeholder="+41..."
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <div class="auth-field-label">
-                  <span>password</span>
-                  <a href="#" class="auth-forgot">Forgot ?</a>
-                </div>
-                <div class="auth-input-line">
-                  <input
-                    v-model="password"
-                    type="password"
-                    autocomplete="current-password"
-                    placeholder="••••••••"
-                    required
-                  />
-                </div>
-              </div>
-            </template>
-
-            <p v-if="error" class="auth-error">{{ error }}</p>
-
-            <button class="auth-primary-btn" type="submit">
-              log in
-            </button>
-          </form>
-
-          <p class="auth-bottom">
-            new here?
-            <RouterLink to="/register">Sign up</RouterLink>
-          </p>
+        <div class="auth-tabs">
+          <button
+            type="button"
+            class="auth-tab"
+            :class="{ 'auth-tab--active': mode === 'phone' }"
+            @click="mode = 'phone'"
+          >
+            phone
+          </button>
+          <button
+            type="button"
+            class="auth-tab"
+            :class="{ 'auth-tab--active': mode === 'email' }"
+            @click="mode = 'email'"
+          >
+            email
+          </button>
         </div>
+
+        <form class="auth-form" @submit.prevent="onSubmit">
+          <template v-if="mode === 'email'">
+            <div>
+              <div class="auth-field-label">
+                <span>email</span>
+              </div>
+              <div class="auth-input-line">
+                <input
+                  v-model="email"
+                  type="email"
+                  autocomplete="email"
+                  placeholder="you@matcha.ch"
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <div class="auth-field-label">
+                <span>password</span>
+                <a href="#" class="auth-forgot">Forgot ?</a>
+              </div>
+              <div class="auth-input-line">
+                <input
+                  v-model="password"
+                  type="password"
+                  autocomplete="current-password"
+                  placeholder="••••••••"
+                  required
+                />
+              </div>
+            </div>
+          </template>
+
+          <template v-else>
+            <div>
+              <div class="auth-field-label">
+                <span>phone number</span>
+              </div>
+              <div class="auth-input-line">
+                <input
+                  v-model="phone"
+                  type="tel"
+                  inputmode="tel"
+                  placeholder="+41..."
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <div class="auth-field-label">
+                <span>password</span>
+                <a href="#" class="auth-forgot">Forgot ?</a>
+              </div>
+              <div class="auth-input-line">
+                <input
+                  v-model="password"
+                  type="password"
+                  autocomplete="current-password"
+                  placeholder="••••••••"
+                  required
+                />
+              </div>
+            </div>
+          </template>
+
+          <p v-if="error" class="auth-error">{{ error }}</p>
+
+          <button class="auth-primary-btn" type="submit">
+            log in
+          </button>
+        </form>
+
+        <p class="auth-bottom">
+          new here?
+          <RouterLink to="/register">Sign up</RouterLink>
+        </p>
       </div>
     </div>
   </div>
@@ -115,7 +114,8 @@
 
 <script setup>
 import { ref } from 'vue';
-import logo from '@/assets/logo-ocha.png'; // ⬅️ IMPORT DU LOGO
+import { RouterLink } from 'vue-router';
+import logo from '@/assets/logo-ocha.png';
 
 const mode = ref('email');
 const email = ref('');
