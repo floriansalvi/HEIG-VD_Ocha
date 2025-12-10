@@ -65,346 +65,6 @@ body {
 }
 
 /* =========================
-   BOTTOM NAV (dans le téléphone)
-   ========================= */
-
-.bottom-nav {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 56px;
-  display: flex;
-  border-top: 1px solid #e0ddd6;
-  background: #ffffff;
-  z-index: 10;
-}
-
-.bottom-nav .item {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-decoration: none;
-  font-size: 12px;
-  color: #999;
-}
-
-.bottom-nav .item span:first-child {
-  font-size: 18px;
-  line-height: 1;
-}
-
-.bottom-nav .item.active {
-  color: var(--ocha-green);
-  font-weight: 600;
-}
-
-.bottom-nav .label {
-  margin-top: 2px;
-}
-
-/* =========================
-   HOME PAGE (exemple)
-   ========================= */
-
-.home {
-  padding-bottom: 16px 16px 72px; /* place pour la bottom nav */
-}
-
-.home-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 24px;
-}
-
-.subtitle {
-  font-size: 14px;
-  color: #888;
-  margin: 0;
-}
-
-.title {
-  margin: 4px 0 0;
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--ocha-text);
-}
-
-.icon-btn {
-  border: none;
-  background: #fff;
-  border-radius: 999px;
-  width: 40px;
-  height: 40px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-  cursor: pointer;
-}
-
-.section {
-  margin-bottom: 24px;
-}
-
-.section-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.section h2 {
-  margin: 0 0 8px;
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--ocha-text);
-}
-
-.link-btn {
-  font-size: 14px;
-  text-decoration: none;
-  color: var(--ocha-green);
-}
-
-.primary-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 12px 16px;
-  border-radius: 999px;
-  background: var(--ocha-green);
-  color: #fff;
-  text-decoration: none;
-  font-weight: 600;
-  font-size: 15px;
-  border: none;
-}
-
-.cards-row {
-  display: flex;
-  gap: 12px;
-  overflow-x: auto;
-  padding-bottom: 4px;
-}
-
-.drink-card {
-  min-width: 140px;
-  background: #fff;
-  border-radius: 16px;
-  padding: 10px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  cursor: pointer;
-}
-
-.drink-image {
-  width: 100%;
-  border-radius: 12px;
-  margin-bottom: 8px;
-  object-fit: cover;
-}
-
-.drink-name {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--ocha-text);
-}
-
-.drink-price {
-  margin: 4px 0 0;
-  font-size: 13px;
-  color: #666;
-}
-
-.promo-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: #fff;
-  border-radius: 16px;
-  padding: 12px 14px;
-  margin-top: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-}
-
-.promo-title {
-  margin: 0 0 4px;
-  font-size: 15px;
-}
-
-.promo-text {
-  margin: 0;
-  font-size: 13px;
-  color: #666;
-}
-
-.promo-badge {
-  background: var(--ocha-green);
-  color: #fff;
-  font-size: 12px;
-  padding: 4px 10px;
-  border-radius: 999px;
-}
-
-.map-placeholder {
-  border-radius: 16px;
-  background: #e3e0d8;
-  padding: 24px;
-  text-align: center;
-  font-size: 14px;
-  color: #555;
-}
-
-/* =========================
-   AUTH SCREENS (dans le téléphone)
-   ========================= */
-
-.auth-screen {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-/* partie haute : fond matcha + logo */
-.auth-bg {
-  flex: 1;
-  position: relative;
-  background-image: url('./background-login.jpg');
-  background-size: cover;
-  background-position: center;
-}
-
-.auth-bg::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.22);
-}
-
-.auth-logo {
-  position: absolute;
-  top: 80px;
-  left: 50%;
-  transform: translateX(-50%);
-}
-
-.auth-logo img {
-  width: 110px;
-  height: auto;
-  display: block;
-}
-
-/* panneau blanc en bas */
-.auth-panel {
-  background: rgba(255, 255, 255, 0.96);
-  backdrop-filter: blur(4px);
-  border-radius: 24px 24px 0 0;
-  padding: 24px 20px 20px;
-  box-sizing: border-box;
-}
-
-.auth-panel-content {
-  margin-top: 4px;
-}
-
-.auth-title {
-  font-size: 20px;
-  font-weight: 600;
-  margin: 0 0 16px;
-  color: #222;
-}
-
-.auth-tabs {
-  display: inline-flex;
-  background: #e5e0d6;
-  border-radius: 999px;
-  padding: 4px;
-  margin-bottom: 20px;
-}
-
-.auth-tab {
-  border: none;
-  background: transparent;
-  border-radius: 999px;
-  padding: 6px 22px;
-  font-size: 13px;
-  text-transform: lowercase;
-  cursor: pointer;
-  color: #6e675a;
-}
-
-.auth-tab--active {
-  background: var(--ocha-green-light);
-  color: #fff;
-}
-
-.auth-form {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
-
-.auth-field-label {
-  font-size: 13px;
-  margin-bottom: 4px;
-  display: flex;
-  justify-content: space-between;
-  color: #3a352b;
-}
-
-.auth-forgot {
-  font-size: 12px;
-  color: #8c8578;
-  text-decoration: none;
-}
-
-.auth-input-line {
-  border-bottom: 1px solid #bcb3a5;
-  padding: 6px 0;
-}
-
-.auth-input-line input {
-  border: none;
-  outline: none;
-  width: 100%;
-  font-size: 14px;
-  padding: 4px 0;
-  background: transparent;
-}
-
-.auth-primary-btn {
-  margin-top: 24px;
-  width: 100%;
-  border-radius: 999px;
-  border: none;
-  padding: 12px 16px;
-  font-size: 15px;
-  font-weight: 600;
-  background: #000;
-  color: #fff;
-  cursor: pointer;
-}
-
-.auth-bottom {
-  margin-top: 12px;
-  text-align: center;
-  font-size: 13px;
-  color: #8c8578;
-}
-
-.auth-bottom a {
-  color: #8c8578;
-  text-decoration: underline;
-}
-
-.auth-error {
-  color: #b3261e;
-  font-size: 12px;
-}
-/* =========================
    HOME - STYLE MAQUETTE
    ========================= */
 
@@ -419,12 +79,11 @@ body {
 .home-hero {
   position: relative;
   height: 230px;
-  border-radius: 24px 24px 24px 24px;
+  border-radius: 24px;
   overflow: hidden;
   margin-bottom: 16px;
 }
 
-/* image de fond (utilise ton propre visuel si tu veux) */
 .home-hero-bg {
   position: absolute;
   inset: 0;
@@ -433,7 +92,6 @@ body {
   background-position: center;
 }
 
-/* léger dégradé par dessus pour lisibilité */
 .home-hero-gradient {
   position: absolute;
   inset: 0;
@@ -667,7 +325,7 @@ body {
 .products-page {
   min-height: 100%;
   padding: 16px 12px 72px; /* place en bas pour la bottom nav */
-  background: transparent
+  background: #ffffff; /* pas de beige derrière la grille */
 }
 
 .products-title {
@@ -677,8 +335,6 @@ body {
   color: #b4aa9a;
 }
 
-/* panneau blanc au centre comme sur la maquette */
-
 .products-panel {
   background: #ffffff;
   border-radius: 16px;
@@ -687,8 +343,9 @@ body {
 }
 
 .products-panel-title {
+  margin: 0 0 12px;
   text-align: center;
-  font-size: 32px;
+  font-size: 14px;
   font-weight: 600;
 }
 
@@ -760,16 +417,12 @@ body {
   color: #7c746a;
 }
 
-/* image (placeholder en attendant les vraies images) */
-
 .product-image-placeholder {
   height: 90px;
   border-radius: 10px;
   background: linear-gradient(180deg, #fce9ff, #f5d0ff);
   margin-bottom: 6px;
 }
-
-/* texte */
 
 .product-card-body {
   display: flex;
@@ -790,8 +443,6 @@ body {
   color: #8b8375;
 }
 
-/* flèche à droite */
-
 .product-arrow-btn {
   position: absolute;
   right: 6px;
@@ -802,6 +453,7 @@ body {
   cursor: pointer;
   color: #7c746a;
 }
+
 /* =========================
    PRODUCT DETAIL PAGE
    ========================= */
@@ -811,8 +463,6 @@ body {
   padding: 12px 16px 80px; /* place pour la bottom nav */
   background: #ffffff;
 }
-
-/* header */
 
 .product-header {
   display: flex;
@@ -831,11 +481,9 @@ body {
   flex: 1;
 }
 
-/* hero image */
-
 .product-hero {
   background: #ffffff;
-  border-radius: 24px 24px 24px 24px;
+  border-radius: 24px;
   padding: 24px 24px 18px;
   display: flex;
   align-items: center;
@@ -913,12 +561,6 @@ body {
   box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.04);
 }
 
-.product-name {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-}
-
 .product-subtitle {
   margin: 4px 0 16px;
   font-size: 12px;
@@ -958,8 +600,6 @@ body {
   border-color: var(--ocha-green-light);
 }
 
-/* add to cart */
-
 .product-add-btn {
   margin-top: 18px;
   width: 100%;
@@ -972,89 +612,143 @@ body {
   color: #fff;
   cursor: pointer;
 }
+
 /* =========================
    CART PAGE
    ========================= */
 
 .cart-page {
   min-height: 100%;
-  padding: 16px 16px 80px; /* place pour la bottom nav */
-  background: #ffffff;
+  padding: 16px 16px 72px; /* place pour la bottom nav */
+  background: #f5eee4;
 }
 
 .cart-header {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
+  justify-content: space-between;
+  margin-bottom: 12px;
 }
 
-.cart-header h1 {
+.cart-title {
   margin: 0;
   font-size: 18px;
   font-weight: 600;
 }
 
 .cart-header-spacer {
-  flex: 1;
+  width: 40px;
 }
 
-/* liste des items */
+/* LISTE */
 
 .cart-list {
-  border-radius: 16px;
-  background: #ffffff;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  overflow: hidden;
+  margin-bottom: 16px;
 }
 
 .cart-item {
-  display: flex;
-  justify-content: space-between;
-  padding: 12px 16px;
-  border-bottom: 1px solid #f0ece6;
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
-.cart-item:last-child {
-  border-bottom: none;
+.cart-item-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.cart-thumb {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: #d4e6b8;
+  flex-shrink: 0;
+}
+
+.cart-item-info {
+  flex: 1;
 }
 
 .cart-item-name {
   margin: 0;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
 }
 
-.cart-item-meta {
+.cart-item-size {
   margin: 2px 0 0;
   font-size: 11px;
   color: #8b8375;
 }
 
-.cart-item-qty {
-  font-size: 13px;
-}
-
-/* total */
-
-.cart-total-row {
-  display: flex;
-  justify-content: center;
-  margin: 16px 0;
-}
-
-.cart-total-pill {
-  padding: 6px 18px;
-  border-radius: 999px;
-  background: #f5a7d4;
-  color: #fff;
+.cart-item-price {
+  margin: 0;
   font-size: 13px;
   font-weight: 600;
 }
 
-/* bouton principal */
+.cart-item-meta {
+  margin-top: 4px;
+  font-size: 11px;
+  color: #8b8375;
+}
 
-.cart-main-btn {
+/* SUMMARY */
+
+.cart-summary {
+  margin-top: 8px;
+}
+
+.cart-total-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  font-size: 14px;
+}
+
+.cart-total-amount {
+  font-weight: 600;
+}
+
+/* boutons choose store / time */
+
+.cart-choose-btn {
+  width: 100%;
+  border-radius: 999px;
+  border: 1px solid #ddd3c7;
+  padding: 10px 14px;
+  margin-bottom: 10px;
+  background: #ffffff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cart-choose-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.cart-choose-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+}
+
+.cart-choose-sub {
+  font-size: 11px;
+  color: #8b8375;
+}
+
+/* bouton Continue */
+
+.cart-place-btn {
+  margin-top: 8px;
   width: 100%;
   border-radius: 999px;
   border: none;
@@ -1066,82 +760,124 @@ body {
   cursor: pointer;
 }
 
+.cart-place-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 /* =========================
-   OVERLAYS (SHOP + TIME)
+   OVERLAYS (store / time)
    ========================= */
 
 .overlay-backdrop {
-  position: absolute;      /* couvre seulement le téléphone */
+  position: absolute;          /* couvre seulement l'intérieur du téléphone */
   inset: 0;
-  background: rgba(0, 0, 0, 0.25);
+  background: rgba(0, 0, 0, 0.35);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 30;
+  padding: 24px 16px;
+  z-index: 40;
 }
 
-.overlay-panel {
-  width: 90%;
-  max-width: 340px;
+.overlay-card {
+  width: 100%;
+  max-width: 330px;
   background: #ffffff;
-  border-radius: 24px;
-  padding: 20px 18px 18px;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.15);
-  position: relative;
+  border-radius: 20px;
+  padding: 14px 14px 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+.overlay-card--time {
+  max-width: 280px;
+}
+
+.overlay-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
 }
 
 .overlay-title {
-  margin: 0 0 12px;
-  text-align: center;
-  font-size: 16px;
+  margin: 0;
+  font-size: 15px;
   font-weight: 600;
 }
 
-/* version carte */
+.overlay-close {
+  border: none;
+  background: transparent;
+  font-size: 18px;
+  cursor: pointer;
+}
 
-.overlay-panel--map .overlay-map-placeholder {
-  height: 230px;
+/* MAP */
+
+.overlay-map {
+  margin-bottom: 10px;
 }
 
 .overlay-map-placeholder {
-  border-radius: 18px;
+  height: 150px;
+  border-radius: 14px;
   background: #e1dfd7;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 13px;
   color: #6c6254;
-  margin-bottom: 16px;
 }
 
-/* version time list */
+/* LISTES */
 
-.overlay-panel--time {
-  max-height: 80%;
-}
-
-.time-list {
+.overlay-list {
   list-style: none;
-  margin: 12px 0 16px;
+  margin: 0 0 12px;
   padding: 0;
 }
 
-.time-item {
-  padding: 10px 0;
-  text-align: center;
-  font-size: 14px;
-  border-bottom: 1px solid #f0ece6;
+.overlay-list--time {
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.overlay-list-item {
+  width: 100%;
+  border-radius: 999px;
+  border: 1px solid #e1dfd7;
+  background: #ffffff;
+  padding: 8px 12px;
+  margin-bottom: 6px;
+  font-size: 13px;
+  text-align: left;
   cursor: pointer;
 }
 
-.time-item--active {
-  background: #f5eee4;
-  font-weight: 600;
+.overlay-list-item--time {
+  border-radius: 12px;
+  text-align: center;
 }
 
-/* boutons overlay */
+.overlay-list-item--selected {
+  border-color: var(--ocha-green-light);
+  background: #f0f5e2;
+}
 
-.overlay-main-btn {
+.overlay-list-main {
+  display: flex;
+  flex-direction: column;
+}
+
+.overlay-list-city {
+  font-size: 11px;
+  color: #8b8375;
+}
+
+/* Bouton principal */
+
+.overlay-primary-btn {
   width: 100%;
   border-radius: 999px;
   border: none;
@@ -1153,12 +889,153 @@ body {
   cursor: pointer;
 }
 
-.overlay-close-btn {
-  position: absolute;
-  top: 10px;
-  right: 12px;
-  border: none;
-  background: transparent;
+.overlay-primary-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* =========================
+   ORDER SUMMARY PAGE
+   ========================= */
+
+.order-page {
+  min-height: 100%;
+  padding: 16px 16px 72px; /* place pour la bottom nav */
+  background: #f5eee4;
+}
+
+.order-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.order-header-title {
   font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.order-header-spacer {
+  width: 40px;
+}
+
+.order-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 14px 14px 16px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+}
+
+/* Ligne produit */
+
+.order-product-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.order-product-img-placeholder {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #e9f5d8, #d3e3b7);
+}
+
+.order-product-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.order-product-name {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.order-product-meta {
+  margin: 2px 0 0;
+  font-size: 11px;
+  color: #8b8375;
+}
+
+.order-product-price {
+  font-size: 13px;
+  font-weight: 600;
+  color: #2f2a24;
+}
+
+/* Info rows */
+
+.order-info-row {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #eee3d6;
+}
+
+.order-info-row--time {
+  margin-top: 10px;
+}
+
+.order-info-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.order-info-icon {
+  font-size: 16px;
+}
+
+.order-info-label {
+  margin: 0;
+  font-size: 12px;
+  color: #8b8375;
+}
+
+.order-info-value {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: #2f2a24;
+}
+
+/* Map */
+
+.order-map-card {
+  margin: 10px 0 4px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #e1dfd7;
+}
+
+.order-map-placeholder {
+  height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: #6c6254;
+}
+
+/* Bouton place order */
+
+.order-place-btn {
+  margin-top: 12px;
+  width: 100%;
+  border: none;
+  border-radius: 999px;
+  padding: 12px 16px;
+  font-size: 15px;
+  font-weight: 600;
+  background: #000000;
+  color: #ffffff;
   cursor: pointer;
+}
+
+.order-place-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
 }

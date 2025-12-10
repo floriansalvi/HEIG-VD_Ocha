@@ -1,12 +1,11 @@
 <template>
   <div class="phone-wrapper">
     <div class="phone-shell">
-      <!-- Contenu scrollable à l'intérieur du "téléphone" -->
       <div class="phone-content">
         <RouterView />
       </div>
 
-      <!-- Bottom nav seulement si on n'est pas sur login / register -->
+      <!-- bottom nav visible sauf sur login / register -->
       <BottomNav v-if="showBottomNav" />
     </div>
   </div>
@@ -15,11 +14,13 @@
 <script setup>
 import { RouterView, useRoute } from 'vue-router';
 import { computed } from 'vue';
-import BottomNav from './components/BottomNav.vue';
+
+// ✅ bon chemin
+import BottomNav from '@/components/ui/BottomNav.vue';
 
 const route = useRoute();
 
-const showBottomNav = computed(
-  () => !['login', 'register'].includes(route.name)
-);
+const showBottomNav = computed(() => {
+  return !['login', 'register'].includes(route.name);
+});
 </script>
