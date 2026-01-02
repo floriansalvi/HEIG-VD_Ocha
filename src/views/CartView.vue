@@ -4,7 +4,7 @@
     <!-- HEADER -->
     <header class="cart-header">
       <button class="icon-btn" type="button" @click="goBack">←</button>
-      <h1 class="cart-title">Cart</h1>
+      <h1 class="cart-title">Order</h1>
       <span class="cart-header-spacer"></span>
     </header>
 

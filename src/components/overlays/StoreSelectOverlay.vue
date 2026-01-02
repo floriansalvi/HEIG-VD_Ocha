@@ -1,15 +1,13 @@
 <template>
-  <div class="overlay-backdrop" @click.self="$emit('close')">
+  <div class="overlay-backdrop" @click.self="emit('close')">
     <div class="overlay-card">
       <div class="overlay-header">
         <h3 class="overlay-title">Choose the shop</h3>
-        <button class="overlay-close" type="button" @click="$emit('close')">×</button>
+        <button class="overlay-close" type="button" @click="emit('close')">×</button>
       </div>
 
       <div class="overlay-map">
-        <div class="overlay-map-placeholder">
-          Map placeholder
-        </div>
+        <LeafletMiniMap :center="mapCenter" :marker="mapCenter" />
       </div>
 
       <ul class="overlay-list">
@@ -17,8 +15,8 @@
           <button
             type="button"
             class="overlay-list-item"
-            :class="{ 'overlay-list-item--selected': s.id === selectedId }"
-            @click="selectStore(s)"
+            :class="{ 'overlay-list-item--selected': s.id === localSelectedId }"
+            @click="localSelectedId = s.id"
           >
             <span class="overlay-list-main">
               <strong>{{ s.name }}</strong>
@@ -42,33 +40,30 @@
 
 <script setup>
 import { computed, ref, watch } from 'vue';
+import LeafletMiniMap from '@/components/ui/OchaMap.vue';
 
 const props = defineProps({
-  modelValue: { type: Object, default: null }, // store sélectionné
-  stores: {
-    type: Array,
-    default: () => [
-      { id: 'lausanne', name: 'Ocha Matcha', city: 'Lausanne' },
-      { id: 'vevey', name: 'Ocha Matcha', city: 'Vevey' },
-      { id: 'montreux', name: 'Ocha Matcha', city: 'Montreux' },
-    ],
-  },
+  stores: { type: Array, default: () => [] },
+  selectedId: { type: [String, Number, null], default: null },
 });
 
 const emit = defineEmits(['close', 'select']);
 
-const selectedId = ref(props.modelValue?.id ?? null);
+const localSelectedId = ref(props.selectedId);
 
 watch(
-  () => props.modelValue,
-  (v) => (selectedId.value = v?.id ?? null)
+  () => props.selectedId,
+  (v) => (localSelectedId.value = v)
 );
 
-const current = computed(() => props.stores.find((s) => s.id === selectedId.value) || null);
+const current = computed(() => props.stores.find((s) => s.id === localSelectedId.value) || null);
 
-function selectStore(store) {
-  selectedId.value = store.id;
-}
+// Pour l’instant on centre Lausanne.
+// Quand tu auras lat/lng par store, tu pourras faire mapCenter = current.value
+const mapCenter = computed(() => {
+  // Lausanne approx
+  return { lat: 46.5197, lng: 6.6323 };
+});
 
 function confirm() {
   if (!current.value) return;

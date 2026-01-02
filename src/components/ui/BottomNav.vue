@@ -47,10 +47,12 @@ const route = useRoute();
 const current = computed(() => {
   const path = route.path;
 
+  if (path === "/") return "home";
   if (path.startsWith("/products")) return "products";
-  if (path.startsWith("/orders")) return "orders";
+  if (path.startsWith("/cart")) return "cart";
   if (path.startsWith("/account")) return "account";
 
+  // fallback (si tu ajoutes d'autres pages plus tard)
   return "home";
 });
 </script>

@@ -1,3 +1,4 @@
+<!-- src/views/HomeView.vue -->
 <template>
   <div class="home">
     <!-- HERO -->
@@ -8,7 +9,7 @@
       <div class="home-hero-content">
         <div class="home-hero-logo">ocha.</div>
 
-        <button class="home-hero-cta">
+        <button class="home-hero-cta" type="button">
           <span>Purchase my usual order</span>
           <span class="home-hero-cta-icon">➜</span>
         </button>
@@ -19,7 +20,7 @@
     <section class="section home-section">
       <div class="section-header">
         <h2>Your favorites</h2>
-        <button class="link-btn">See all</button>
+        <button class="link-btn" type="button">See all</button>
       </div>
 
       <div class="cards-row">
@@ -29,7 +30,7 @@
             <p class="fav-card-name">{{ drink.name }}</p>
             <p class="fav-card-size">Medium • Iced</p>
           </div>
-          <button class="fav-card-add">
+          <button class="fav-card-add" type="button">
             <span>Add</span>
             <span>🥤</span>
           </button>
@@ -46,7 +47,7 @@
         <div class="promo-large-content">
           <p class="promo-large-title">Buy 1 get 1 free</p>
           <p class="promo-large-sub">On classic matcha latte</p>
-          <button class="promo-large-btn">Get promo</button>
+          <button class="promo-large-btn" type="button">Get promo</button>
         </div>
       </div>
 
@@ -66,26 +67,88 @@
         <p class="stamps-sub">Buy 2 more to get 1 free!</p>
 
         <div class="stamps-dots">
-          <span v-for="n in 5" :key="n" class="stamp-dot" :class="{ 'stamp-dot--filled': n <= 3 }" />
+          <span
+            v-for="n in 5"
+            :key="n"
+            class="stamp-dot"
+            :class="{ 'stamp-dot--filled': n <= 3 }"
+          />
         </div>
       </div>
     </section>
 
-    <!-- MAP PLACEHOLDER -->
+    <!-- MAP -->
     <section class="section home-section">
+      <p></p>
       <h2 class="home-section-title">Where to find us</h2>
 
       <div class="map-card">
-        <div class="map-placeholder">Map coming soon</div>
+        <!-- IMPORTANT: le div doit avoir une height (sinon carte invisible) -->
+        <div ref="mapEl" class="home-map"></div>
       </div>
     </section>
   </div>
 </template>
 
 <script setup>
+import { ref, onMounted, onBeforeUnmount } from "vue";
+import L from "leaflet";
+
 const favorites = [
-  { id: 1, name: 'Classic Matcha Latte' },
-  { id: 2, name: 'Iced Matcha Classic' },
-  { id: 3, name: 'Coconut Matcha' },
+  { id: 1, name: "Classic Matcha Latte" },
+  { id: 2, name: "Iced Matcha Classic" },
+  { id: 3, name: "Coconut Matcha" },
 ];
+
+// Exemple de shops (tu peux les remplacer par ton futur backend)
+const shops = [
+  { id: "lausanne", name: "Ocha Matcha", city: "Lausanne", lat: 46.5197, lng: 6.6323 },
+  { id: "renens", name: "Ocha Matcha", city: "Renens", lat: 46.5393, lng: 6.5880 },
+];
+
+const mapEl = ref(null);
+let mapInstance = null;
+
+onMounted(() => {
+  if (!mapEl.value) return;
+
+  // Centre sur Lausanne
+  mapInstance = L.map(mapEl.value, {
+    zoomControl: false,
+    attributionControl: false,
+  }).setView([46.5197, 6.6323], 12);
+
+  // Tiles OpenStreetMap
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+  }).addTo(mapInstance);
+
+  // Markers shops
+  shops.forEach((s) => {
+    L.marker([s.lat, s.lng])
+      .addTo(mapInstance)
+      .bindPopup(`<b>${s.name}</b><br/>${s.city}`);
+  });
+
+  // Petit fix quand la carte est dans un container stylé
+  setTimeout(() => {
+    mapInstance && mapInstance.invalidateSize();
+  }, 50);
+});
+
+onBeforeUnmount(() => {
+  if (mapInstance) {
+    mapInstance.remove();
+    mapInstance = null;
+  }
+});
 </script>
+
+<style scoped>
+/* Le point clé : donner une height au container de map */
+.home-map {
+  height: 180px; /* ajuste si tu veux */
+  width: 100%;
+  border-radius: 16px;
+}
+</style>

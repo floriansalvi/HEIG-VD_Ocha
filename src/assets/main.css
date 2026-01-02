@@ -1543,3 +1543,17 @@ body {
 .ongoing-total-amount {
   font-weight: 800;
 }
+
+/* Leaflet: indispensable */
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+}
+
+/* Ton bloc map */
+.order-map {
+  height: 140px;         /* adapte */
+  border-radius: 16px;
+  overflow: hidden;
+  background: #e1dfd7;
+}
