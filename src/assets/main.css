@@ -770,7 +770,7 @@ body {
    ========================= */
 
 .overlay-backdrop {
-  position: absolute;          /* couvre seulement l'intérieur du téléphone */
+  position: absolute;           /* couvre seulement l’iPhone */
   inset: 0;
   background: rgba(0, 0, 0, 0.35);
   display: flex;
@@ -804,6 +804,8 @@ body {
   margin: 0;
   font-size: 15px;
   font-weight: 600;
+  text-align: center;
+  flex: 1;
 }
 
 .overlay-close {
@@ -814,10 +816,6 @@ body {
 }
 
 /* MAP */
-
-.overlay-map {
-  margin-bottom: 10px;
-}
 
 .overlay-map-placeholder {
   height: 150px;
@@ -830,7 +828,7 @@ body {
   color: #6c6254;
 }
 
-/* LISTES */
+/* LISTE COMMUNE (store + time) */
 
 .overlay-list {
   list-style: none;
@@ -863,16 +861,6 @@ body {
 .overlay-list-item--selected {
   border-color: var(--ocha-green-light);
   background: #f0f5e2;
-}
-
-.overlay-list-main {
-  display: flex;
-  flex-direction: column;
-}
-
-.overlay-list-city {
-  font-size: 11px;
-  color: #8b8375;
 }
 
 /* Bouton principal */
@@ -1038,4 +1026,520 @@ body {
 .order-place-btn:disabled {
   opacity: 0.6;
   cursor: default;
+}
+/* =========================
+   ACCOUNT PAGE
+   ========================= */
+
+.account-page {
+  min-height: 100%;
+  padding: 16px 16px 72px; /* place pour la bottom nav */
+  background: #ffffff;
+}
+
+/* header */
+
+.account-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.account-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.account-header-spacer {
+  flex: 1;
+}
+
+/* cartes génériques */
+
+.account-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 16px 14px 14px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+  margin-bottom: 16px;
+}
+
+.account-card--barcode {
+  padding-bottom: 18px;
+}
+
+.account-section-label {
+  margin: 0 0 10px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.account-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.account-section-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* petit bouton texte à droite (Infos / See all orders) */
+.account-link-btn {
+  border: none;
+  background: transparent;
+  font-size: 12px;
+  color: #8b8375;
+  cursor: pointer;
+  padding: 0;
+}
+
+/* BARCODE */
+
+.account-barcode-wrapper {
+  border-radius: 18px;
+  padding: 14px 16px 10px;
+  background: linear-gradient(135deg, #a4c066, #7da152);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
+}
+
+.account-barcode-inner {
+  border-radius: 14px;
+  padding: 8px 10px;
+  background: #ffffff;
+  margin-bottom: 4px;
+}
+
+.account-barcode-stripes {
+  height: 56px;
+  border-radius: 8px;
+  background:
+    repeating-linear-gradient(
+      to right,
+      #222 0,
+      #222 2px,
+      transparent 2px,
+      transparent 4px
+    );
+}
+
+.account-barcode-number {
+  margin: 0;
+  margin-top: 4px;
+  text-align: center;
+  font-size: 13px;
+  letter-spacing: 0.2em;
+  color: #ffffff;
+}
+
+/* FIDELITY CARD */
+
+.account-fidelity-card {
+  border-radius: 16px;
+  overflow: hidden;
+  position: relative;
+  height: 140px;
+}
+
+.account-fidelity-bg {
+  position: absolute;
+  inset: 0;
+  background: url('@/assets/background-login.jpg') center/cover no-repeat;
+  filter: blur(0.5px);
+  transform: scale(1.02);
+}
+
+.account-fidelity-content {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  padding: 18px 16px 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  color: #ffffff;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.05) 0%,
+    rgba(0, 0, 0, 0.35) 100%
+  );
+}
+
+.account-fidelity-main {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.account-fidelity-sub {
+  margin: 4px 0 10px;
+  font-size: 12px;
+}
+
+.account-fidelity-dots {
+  display: flex;
+  gap: 8px;
+}
+
+.account-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  border: 1px solid #fce9ff;
+  background: transparent;
+}
+
+.account-dot--filled {
+  background: #ffd8f5;
+}
+
+/* ORDER HISTORY LIST */
+
+.account-orders-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.account-order-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-top: 1px solid #f0ece6;
+}
+
+.account-order-item:first-child {
+  border-top: none;
+}
+
+.account-order-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.account-order-date {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.account-order-summary {
+  margin: 2px 0 0;
+  font-size: 11px;
+  color: #8b8375;
+}
+
+.account-order-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 8px;
+}
+
+.account-order-status {
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid #ddd3c7;
+}
+
+.account-order-status--preparation {
+  background: #fff7df;
+  border-color: #f0d68b;
+}
+
+.account-order-status--finished {
+  background: #e5f7e8;
+  border-color: #9ad3a4;
+}
+
+.account-order-arrow {
+  font-size: 16px;
+  color: #b0a89a;
+}
+
+/* USUAL ORDER */
+
+.account-usual-card {
+  border-radius: 14px;
+  background: #faf6f0;
+  padding: 10px 12px 12px;
+}
+
+.account-usual-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.account-usual-row + .account-usual-row {
+  margin-top: 4px;
+}
+
+.account-usual-row--store {
+  margin-top: 10px;
+}
+
+.account-usual-label {
+  font-size: 11px;
+  color: #8b8375;
+}
+
+.account-usual-value {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: #2f2a24;
+}
+
+.account-usual-qty {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.account-usual-edit-btn {
+  border: none;
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 12px;
+  background: #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* =========================
+   ORDER SUCCESS OVERLAY
+   ========================= */
+
+.order-success-backdrop {
+  /* on réutilise overlay-backdrop + petit ajustement d’opacité si tu veux */
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 50;
+}
+
+.order-success-card {
+  width: 80%;
+  max-width: 300px;
+  background: #e4f4d9; /* vert pâle */
+  border-radius: 22px;
+  padding: 18px 16px 16px;
+  text-align: center;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+.order-success-icon {
+  font-size: 40px;
+  margin-bottom: 10px;
+}
+
+.order-success-title {
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #2f5b3a;
+}
+
+.order-success-text {
+  margin: 0 0 14px;
+  font-size: 13px;
+  color: #3a352b;
+}
+
+.order-success-btn {
+  width: 100%;
+  border-radius: 999px;
+  border: none;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  background: #000000;
+  color: #ffffff;
+  cursor: pointer;
+}
+/* =========================
+   ONGOING ORDER (Cart) - jolie card
+   ========================= */
+
+.ongoing-card {
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 14px 14px 12px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+  margin-bottom: 14px;
+}
+
+.ongoing-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.ongoing-title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ongoing-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #2f2a24;
+}
+
+.ongoing-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #f6f3ee;
+  border-radius: 999px;
+  padding: 6px 10px;
+  width: fit-content;
+}
+
+.ongoing-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--ocha-green);
+}
+
+.ongoing-status-text {
+  font-size: 12px;
+  color: #6c6254;
+  font-weight: 600;
+}
+
+.ongoing-total {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 800;
+  color: #2f2a24;
+  white-space: nowrap;
+}
+
+.ongoing-meta {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ongoing-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #2f2a24;
+}
+
+.ongoing-ico {
+  font-size: 16px;
+  width: 18px;
+  text-align: center;
+}
+
+.ongoing-meta-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: #2f2a24;
+}
+
+/* items */
+.ongoing-items {
+  margin-top: 12px;
+  background: #fbfaf8;
+  border-radius: 16px;
+  padding: 10px 10px 8px;
+  border: 1px solid #efe7db;
+}
+
+.ongoing-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+}
+
+.ongoing-item + .ongoing-item {
+  margin-top: 8px;
+}
+
+.ongoing-item-left {
+  display: flex;
+  gap: 10px;
+  min-width: 0;
+}
+
+.ongoing-thumb {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #d4e6b8;
+  flex-shrink: 0;
+}
+
+.ongoing-item-info {
+  min-width: 0;
+}
+
+.ongoing-item-name {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #2f2a24;
+}
+
+.ongoing-item-sub {
+  margin: 2px 0 0;
+  font-size: 11px;
+  color: #8b8375;
+  font-weight: 600;
+}
+
+.ongoing-item-sub2 {
+  margin: 6px 0 0;
+  font-size: 11px;
+  color: #8b8375;
+}
+
+.ongoing-item-price {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+  color: #2f2a24;
+}
+
+.ongoing-divider {
+  height: 1px;
+  background: #eee3d6;
+  margin: 10px 6px 8px;
+}
+
+.ongoing-total-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 6px 2px;
+  font-size: 13px;
+  color: #2f2a24;
+}
+
+.ongoing-total-amount {
+  font-weight: 800;
 }

@@ -1,74 +1,78 @@
 <template>
-  <div class="overlay-backdrop" @click.self="onClose">
+  <div class="overlay-backdrop" @click.self="$emit('close')">
     <div class="overlay-card">
       <div class="overlay-header">
-        <h2 class="overlay-title">Choose store</h2>
-        <button class="overlay-close" type="button" @click="onClose">×</button>
+        <h3 class="overlay-title">Choose the shop</h3>
+        <button class="overlay-close" type="button" @click="$emit('close')">×</button>
       </div>
 
       <div class="overlay-map">
         <div class="overlay-map-placeholder">
-          Map / store locations
+          Map placeholder
         </div>
       </div>
 
       <ul class="overlay-list">
-        <li
-          v-for="store in stores"
-          :key="store.id"
-        >
+        <li v-for="s in stores" :key="s.id">
           <button
             type="button"
             class="overlay-list-item"
-            :class="{ 'overlay-list-item--selected': store.id === modelValue }"
-            @click="select(store)"
+            :class="{ 'overlay-list-item--selected': s.id === selectedId }"
+            @click="selectStore(s)"
           >
             <span class="overlay-list-main">
-              <strong>{{ store.name }}</strong>
-              <span class="overlay-list-city">{{ store.city }}</span>
+              <strong>{{ s.name }}</strong>
+              <span class="overlay-list-city">{{ s.city }}</span>
             </span>
           </button>
         </li>
       </ul>
 
-      <!-- Si tu veux garder un bouton -->
-      <!--
       <button
         class="overlay-primary-btn"
         type="button"
-        :disabled="!modelValue"
-        @click="onClose"
+        :disabled="!current"
+        @click="confirm"
       >
-        Close
+        Confirm
       </button>
-      -->
     </div>
   </div>
 </template>
 
 <script setup>
+import { computed, ref, watch } from 'vue';
+
 const props = defineProps({
-  modelValue: {
-    type: String,
-    default: '',
+  modelValue: { type: Object, default: null }, // store sélectionné
+  stores: {
+    type: Array,
+    default: () => [
+      { id: 'lausanne', name: 'Ocha Matcha', city: 'Lausanne' },
+      { id: 'vevey', name: 'Ocha Matcha', city: 'Vevey' },
+      { id: 'montreux', name: 'Ocha Matcha', city: 'Montreux' },
+    ],
   },
 });
 
-const emits = defineEmits(['update:modelValue', 'close']);
+const emit = defineEmits(['close', 'select']);
 
-// mêmes shops que dans la maquette
-const stores = [
-  { id: 'lausanne', name: 'Ocha Matcha Lausanne', city: 'Lausanne' },
-  { id: 'geneve', name: 'Ocha Matcha Genève', city: 'Genève' },
-];
+const selectedId = ref(props.modelValue?.id ?? null);
 
-const select = (store) => {
-  // ✅ on informe le parent (CartView) directement
-  emits('update:modelValue', store.id);
-  emits('close');
-};
+watch(
+  () => props.modelValue,
+  (v) => (selectedId.value = v?.id ?? null)
+);
 
-const onClose = () => {
-  emits('close');
-};
+const current = computed(() => props.stores.find((s) => s.id === selectedId.value) || null);
+
+function selectStore(store) {
+  selectedId.value = store.id;
+}
+
+function confirm() {
+  if (!current.value) return;
+  emit('select', current.value);
+  emit('close');
+}
 </script>

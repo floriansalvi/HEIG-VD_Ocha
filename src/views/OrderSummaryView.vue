@@ -1,3 +1,4 @@
+<!-- src/views/OrderSummaryView.vue -->
 <template>
   <div class="order-page">
     <!-- HEADER -->
@@ -25,8 +26,8 @@
         <span class="order-product-price">{{ total }} CHF</span>
       </div>
 
-      <!-- Ligne shop (cliquable → overlay) -->
-      <div class="order-info-row order-info-row--clickable" @click="openStoreOverlay">
+      <!-- Ligne shop -->
+      <div class="order-info-row">
         <div class="order-info-left">
           <span class="order-info-icon">📍</span>
           <div>
@@ -36,18 +37,15 @@
         </div>
       </div>
 
-      <!-- MAP (maquette pour l’instant) -->
+      <!-- MAP (placeholder) -->
       <div class="order-map-card">
         <div class="order-map-placeholder">
           Map here ({{ shopName }})
         </div>
       </div>
 
-      <!-- Ligne time (cliquable → overlay) -->
-      <div
-        class="order-info-row order-info-row--time order-info-row--clickable"
-        @click="openTimeOverlay"
-      >
+      <!-- Ligne time -->
+      <div class="order-info-row order-info-row--time">
         <div class="order-info-left">
           <span class="order-info-icon">⏰</span>
           <div>
@@ -69,37 +67,45 @@
       </button>
     </section>
 
-    <!-- OVERLAYS -->
-    <StoreSelectOverlay
-      v-model="showStoreOverlay"
-      :stores="stores"
-      @select="handleStoreSelect"
-    />
-
-    <TimeSelectOverlay
-      v-model="showTimeOverlay"
-      :times="timeSlots"
-      @select="handleTimeSelect"
-    />
+    <!-- OVERLAY SUCCESS -->
+    <div
+      v-if="showSuccessOverlay"
+      class="overlay-backdrop order-success-backdrop"
+    >
+      <div class="order-success-card">
+        <div class="order-success-icon">✅</div>
+        <h2 class="order-success-title">Order confirmed</h2>
+        <p class="order-success-text">
+          Your drinks will be ready at
+          <strong>{{ pickupTime }}</strong>
+          at
+          <strong>{{ shopName }}</strong>.
+        </p>
+        <button
+          type="button"
+          class="order-success-btn"
+          @click="goToCart"
+        >
+          Go to cart
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 
+<!-- src/views/OrderSummaryView.vue (seulement la partie <script setup>) -->
 <script setup>
 import { ref } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
+import { useRouter } from 'vue-router';
 
 const router = useRouter();
-const route = useRoute();
 
-/**
- * On récupère les valeurs depuis la query si dispo
- * sinon on garde des valeurs par défaut.
- */
-const total = ref(route.query.total || '17.80');
-const shopName = ref(route.query.shop || 'Lausanne, Ocha Matcha');
-const pickupTime = ref(route.query.time || '16:15');
+const total = ref('17.80');
+const shopName = ref('Lausanne, Ocha Matcha');
+const pickupTime = ref('16:15');
 
 const isPlacing = ref(false);
+const showSuccessOverlay = ref(false);
 
 const placeOrder = () => {
   if (isPlacing.value) return;
@@ -113,11 +119,25 @@ const placeOrder = () => {
 
   setTimeout(() => {
     isPlacing.value = false;
-    router.push('/orders');
-  }, 800);
+    showSuccessOverlay.value = true;
+  }, 700);
 };
 
 const goBack = () => {
   router.back();
+};
+
+const goToCart = () => {
+  showSuccessOverlay.value = false;
+
+  router.push({
+    path: '/cart',
+    query: {
+      activeOrder: '1',
+      total: total.value,
+      shop: shopName.value,
+      time: pickupTime.value,
+    },
+  });
 };
 </script>

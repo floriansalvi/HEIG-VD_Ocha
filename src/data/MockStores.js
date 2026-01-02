@@ -1,3 +1,6 @@
+//  │    └── MockStores.js   ← servira pour la map + choix du shop
+
+
 export const mockStores = [
   {
     _id: 's1',

@@ -1,23 +1,23 @@
 <template>
-  <div class="overlay-backdrop" @click.self="onClose">
+  <div class="overlay-backdrop" @click.self="$emit('close')">
     <div class="overlay-card overlay-card--time">
       <div class="overlay-header">
-        <h2 class="overlay-title">Pick up time</h2>
-        <button class="overlay-close" type="button" @click="onClose">×</button>
+        <h3 class="overlay-title">Pick up time</h3>
+        <button class="overlay-close" type="button" @click="$emit('close')">×</button>
       </div>
 
-      <div class="overlay-list overlay-list--time">
-        <button
-          v-for="slot in slots"
-          :key="slot"
-          type="button"
-          class="overlay-list-item overlay-list-item--time"
-          :class="{ 'overlay-list-item--selected': slot === selectedTime }"
-          @click="selectedTime = slot"
-        >
-          {{ slot }}
-        </button>
-      </div>
+      <ul class="overlay-list overlay-list--time">
+        <li v-for="t in times" :key="t">
+          <button
+            type="button"
+            class="overlay-list-item overlay-list-item--time"
+            :class="{ 'overlay-list-item--selected': t === selectedTime }"
+            @click="selectedTime = t"
+          >
+            {{ t }}
+          </button>
+        </li>
+      </ul>
 
       <button
         class="overlay-primary-btn"
@@ -25,42 +25,35 @@
         :disabled="!selectedTime"
         @click="confirm"
       >
-        Confirm time
+        Confirm
       </button>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 
 const props = defineProps({
-  modelValue: {
-    type: String,
-    default: '',
+  modelValue: { type: String, default: '' }, // heure sélectionnée
+  times: {
+    type: Array,
+    default: () => ['12:00', '12:15', '12:30', '12:45', '13:00', '13:15', '13:30'],
   },
 });
 
-const emits = defineEmits(['update:modelValue', 'close']);
+const emit = defineEmits(['close', 'select']);
 
-const slots = [
-  '16:00',
-  '16:15',
-  '16:30',
-  '16:45',
-  '17:00',
-  '17:15',
-];
+const selectedTime = ref(props.modelValue);
 
-const selectedTime = ref(props.modelValue || '');
+watch(
+  () => props.modelValue,
+  (v) => (selectedTime.value = v || '')
+);
 
-const confirm = () => {
+function confirm() {
   if (!selectedTime.value) return;
-  emits('update:modelValue', selectedTime.value);
-  emits('close');
-};
-
-const onClose = () => {
-  emits('close');
-};
+  emit('select', selectedTime.value);
+  emit('close');
+}
 </script>
