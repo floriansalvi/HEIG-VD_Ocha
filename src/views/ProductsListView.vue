@@ -1,44 +1,30 @@
 <template>
   <div class="products-page">
-  
-
     <section class="products-panel">
       <h1 class="products-panel-title">Our matchas</h1>
 
-      <!-- onglets iced / warm -->
-      <div class="products-tabs">
-        <button
-          type="button"
-          class="products-tab"
-          :class="{ 'products-tab--active': activeTab === 'iced' }"
-          @click="activeTab = 'iced'"
-        >
-          iced
-        </button>
-        <button
-          type="button"
-          class="products-tab"
-          :class="{ 'products-tab--active': activeTab === 'warm' }"
-          @click="activeTab = 'warm'"
-        >
-          warm
-        </button>
-      </div>
+      <p v-if="loading" style="margin: 0 0 12px; font-size: 12px; color: #8b8375;">
+        Loading…
+      </p>
+
+      <p v-if="error" style="margin: 0 0 12px; font-size: 12px; color: #b00020;">
+        {{ error }}
+      </p>
 
       <!-- grille de boissons -->
       <div class="products-grid">
         <article
-          v-for="product in filteredProducts"
+          v-for="product in products"
           :key="product.id"
           class="product-card"
         >
           <div class="product-card-header">
-            <span class="product-price-tag">From {{ product.price }}</span>
+            <span class="product-price-tag">From {{ formatCHF(product.basePriceCHF) }}</span>
             <button class="product-fav-btn" type="button">☆</button>
           </div>
 
           <div class="product-image-placeholder">
-            <!-- ici tu mettras <img :src="product.imageUrl" /> quand l'API sera branchée -->
+            <!-- plus tard: <img :src="imgUrl(product.image)" /> -->
           </div>
 
           <div class="product-card-body">
@@ -46,34 +32,81 @@
             <p class="product-type">Matcha Latte</p>
           </div>
 
-          <button class="product-arrow-btn" type="button">
+          <button class="product-arrow-btn" type="button" @click="goToProduct(product)">
             &gt;
           </button>
         </article>
       </div>
+
+      <p
+        v-if="!loading && !error && products.length === 0"
+        style="margin: 12px 0 0; font-size: 12px; color: #8b8375; text-align: center;"
+      >
+        No products found.
+      </p>
     </section>
   </div>
 </template>
 
 <script setup>
-import { computed, ref } from 'vue';
+import { ref, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import api from "@/services/api";
 
-const activeTab = ref('iced');
+const router = useRouter();
 
-const products = [
-  { id: 1, name: 'Classic Matcha Latte', price: '6.50 CHF', type: 'iced' },
-  { id: 2, name: 'Vanilla Matcha Latte', price: '6.90 CHF', type: 'iced' },
-  { id: 3, name: 'Coconut Matcha Latte', price: '6.90 CHF', type: 'iced' },
-  { id: 4, name: 'Lavender Matcha Latte', price: '6.90 CHF', type: 'iced' },
-  { id: 5, name: 'Strawberry Matcha Latte', price: '6.90 CHF', type: 'iced' },
-  { id: 6, name: 'Apricot Matcha Latte', price: '6.90 CHF', type: 'iced' },
-  { id: 7, name: 'Mixed Berries Matcha Latte', price: '6.90 CHF', type: 'iced' },
-  { id: 8, name: 'Açaí Matcha Latte', price: '6.90 CHF', type: 'iced' },
-  { id: 9, name: 'Mango Matcha Latte', price: '6.90 CHF', type: 'warm' },
-  { id: 10, name: 'Blueberry Matcha Latte', price: '6.90 CHF', type: 'warm' },
-];
+const products = ref([]);
+const loading = ref(false);
+const error = ref("");
 
-const filteredProducts = computed(() =>
-  products.filter((p) => p.type === activeTab.value)
-);
+function formatCHF(n) {
+  const num = Number(n);
+  if (!Number.isFinite(num)) return "— CHF";
+  return `${num.toFixed(2)} CHF`;
+}
+
+// optionnel si tu sers tes images depuis le back
+function imgUrl(filename) {
+  if (!filename) return "";
+  return `${import.meta.env.VITE_API_URL}/uploads/${filename}`;
+}
+
+async function loadProducts() {
+  loading.value = true;
+  error.value = "";
+
+  try {
+    // ton backend: GET /products?active=true
+    const { data } = await api.get("/products", {
+      params: { active: "true", page: 1, limit: 100 },
+    });
+
+    const list = Array.isArray(data?.products) ? data.products : [];
+
+    products.value = list.map((p) => ({
+      id: p._id,
+      slug: p.slug,
+      name: p.name,
+      basePriceCHF: p.basePriceCHF,
+      image: p.image,
+      description: p.description,
+      category: p.category,
+      size: p.size,
+      extra_chf: p.extra_chf,
+    }));
+  } catch (e) {
+    console.error(e);
+    error.value = "Impossible de charger les produits (API).";
+  } finally {
+    loading.value = false;
+  }
+}
+
+function goToProduct(product) {
+  // adapte selon ton router: id ou slug
+  // ex: /products/:id
+  router.push(`/products/${product.id}`);
+}
+
+onMounted(loadProducts);
 </script>

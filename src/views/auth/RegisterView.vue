@@ -10,25 +10,6 @@
       <div class="auth-panel-content">
         <h1 class="auth-title">Sign up</h1>
 
-        <div class="auth-tabs">
-          <button
-            type="button"
-            class="auth-tab"
-            :class="{ 'auth-tab--active': mode === 'phone' }"
-            @click="mode = 'phone'"
-          >
-            phone
-          </button>
-          <button
-            type="button"
-            class="auth-tab"
-            :class="{ 'auth-tab--active': mode === 'email' }"
-            @click="mode = 'email'"
-          >
-            email
-          </button>
-        </div>
-
         <form class="auth-form" @submit.prevent="onSubmit">
           <div>
             <div class="auth-field-label">
@@ -36,7 +17,7 @@
             </div>
             <div class="auth-input-line">
               <input
-                v-model="firstName"
+                v-model.trim="firstName"
                 type="text"
                 placeholder="First name"
                 required
@@ -50,7 +31,7 @@
             </div>
             <div class="auth-input-line">
               <input
-                v-model="lastName"
+                v-model.trim="lastName"
                 type="text"
                 placeholder="Last name"
                 required
@@ -58,31 +39,16 @@
             </div>
           </div>
 
-          <div v-if="mode === 'email'">
+          <div>
             <div class="auth-field-label">
               <span>email</span>
             </div>
             <div class="auth-input-line">
               <input
-                v-model="email"
+                v-model.trim="email"
                 type="email"
                 autocomplete="email"
                 placeholder="you@matcha.ch"
-                required
-              />
-            </div>
-          </div>
-
-          <div v-else>
-            <div class="auth-field-label">
-              <span>phone number</span>
-            </div>
-            <div class="auth-input-line">
-              <input
-                v-model="phone"
-                type="tel"
-                inputmode="tel"
-                placeholder="+41..."
                 required
               />
             </div>
@@ -120,42 +86,37 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
-import { RouterLink } from 'vue-router';
-import logo from '@/assets/logo-ocha.png';
+import { ref } from "vue";
+import { RouterLink, useRouter, useRoute } from "vue-router";
+import { useAuthStore } from "@/stores/auth";
+import logo from "@/assets/logo-ocha.png";
 
-const mode = ref('email');
-const firstName = ref('');
-const lastName = ref('');
-const email = ref('');
-const phone = ref('');
-const password = ref('');
-const error = ref('');
+const router = useRouter();
+const route = useRoute();
+const auth = useAuthStore();
 
-const onSubmit = () => {
-  error.value = '';
+const firstName = ref("");
+const lastName = ref("");
+const email = ref("");
+const password = ref("");
+const error = ref("");
 
-  if (!firstName.value || !lastName.value || !password.value) {
-    error.value = 'Complète tous les champs obligatoires.';
+const onSubmit = async () => {
+  error.value = "";
+
+  if (!firstName.value || !lastName.value || !email.value || !password.value) {
+    error.value = "Please fill all fields.";
     return;
   }
 
-  if (mode.value === 'email' && !email.value) {
-    error.value = 'Email requis.';
-    return;
-  }
+  try {
+    // 👉 plus tard : await auth.register({ firstName, lastName, email, password })
+    auth.setToken("fake-token");
 
-  if (mode.value === 'phone' && !phone.value) {
-    error.value = 'Numéro de téléphone requis.';
-    return;
+    const redirect = route.query.redirect;
+    router.replace(typeof redirect === "string" ? redirect : "/");
+  } catch {
+    error.value = "Registration failed.";
   }
-
-  console.log('REGISTER', {
-    mode: mode.value,
-    firstName: firstName.value,
-    lastName: lastName.value,
-    email: email.value,
-    phone: phone.value,
-  });
 };
 </script>

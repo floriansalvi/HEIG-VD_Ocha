@@ -1,15 +1,15 @@
-import axios from 'axios';
+// src/services/api.js
+import axios from "axios";
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'https://ton-backend.render.com/api',
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:3000",
+  headers: { "Content-Type": "application/json" },
 });
 
-// Intercepteur pour ajouter le JWT plus tard
+// ajoute automatiquement le token si présent
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('authToken'); // ou Pinia store plus tard
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
+  const token = localStorage.getItem("access_token");
+  if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
