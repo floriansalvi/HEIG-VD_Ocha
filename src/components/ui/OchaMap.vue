@@ -3,78 +3,125 @@
 </template>
 
 <script setup>
-import { onMounted, onBeforeUnmount, ref, watch } from 'vue';
-import L from 'leaflet';
-
-// Fix icons (souvent nécessaire avec Vite)
-import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
-import markerIcon from 'leaflet/dist/images/marker-icon.png';
-import markerShadow from 'leaflet/dist/images/marker-shadow.png';
-
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: markerIcon2x,
-  iconUrl: markerIcon,
-  shadowUrl: markerShadow,
-});
+import { onMounted, onBeforeUnmount, ref, watch } from "vue";
+import L from "leaflet";
 
 const props = defineProps({
   center: { type: Object, required: true }, // { lat, lng }
   zoom: { type: Number, default: 13 },
-  marker: { type: Object, default: null }, // { lat, lng } ou null
+  markers: { type: Array, default: () => [] }, // [{lat,lng,type:'user'|'store',id?}]
+  selectedStoreId: { type: [String, null], default: null },
+  fitToMarkers: { type: Boolean, default: true }, // ✅ auto cadrage
 });
 
 const el = ref(null);
 let map = null;
-let markerLayer = null;
+let layer = null;
 
-function setMarker(m) {
+function clearLayer() {
+  if (layer) {
+    layer.remove();
+    layer = null;
+  }
+}
+
+function userIcon() {
+  return L.divIcon({
+    className: "",
+    html: `<div style="
+      width:14px;height:14px;border-radius:999px;
+      background:#2563eb;border:2px solid #fff;
+      box-shadow:0 6px 14px rgba(0,0,0,.25);
+    "></div>`,
+    iconSize: [14, 14],
+    iconAnchor: [7, 7],
+  });
+}
+
+function storeIcon(isSelected) {
+  // pin SVG (pas d'asset externe)
+  const fill = isSelected ? "#111827" : "#16a34a";
+  return L.divIcon({
+    className: "",
+    html: `
+      <div style="transform: translate(-50%, -100%);">
+        <svg width="28" height="34" viewBox="0 0 24 32" xmlns="http://www.w3.org/2000/svg"
+             style="filter: drop-shadow(0 6px 14px rgba(0,0,0,.25));">
+          <path d="M12 0C6.9 0 2.8 4.1 2.8 9.2c0 6.9 9.2 22.8 9.2 22.8s9.2-15.9 9.2-22.8C21.2 4.1 17.1 0 12 0z"
+                fill="${fill}"/>
+          <circle cx="12" cy="9.5" r="4" fill="#ffffff"/>
+        </svg>
+      </div>`,
+    iconSize: [28, 34],
+    iconAnchor: [14, 34],
+  });
+}
+
+function renderMarkers() {
   if (!map) return;
 
-  if (markerLayer) {
-    markerLayer.remove();
-    markerLayer = null;
+  clearLayer();
+  layer = L.layerGroup().addTo(map);
+
+  const list = Array.isArray(props.markers) ? props.markers : [];
+
+  const latLngs = [];
+
+  for (const m of list) {
+    if (m?.lat == null || m?.lng == null) continue;
+
+    const isSelected = props.selectedStoreId && m.id === props.selectedStoreId;
+
+    if (m.type === "user") {
+      L.marker([m.lat, m.lng], { icon: userIcon(), interactive: false }).addTo(layer);
+    } else {
+      L.marker([m.lat, m.lng], { icon: storeIcon(isSelected) }).addTo(layer);
+    }
+
+    latLngs.push([m.lat, m.lng]);
   }
 
-  if (m?.lat != null && m?.lng != null) {
-    markerLayer = L.marker([m.lat, m.lng]).addTo(map);
+  // ✅ auto-cadrage pour voir user + shops
+  if (props.fitToMarkers && latLngs.length >= 2) {
+    const bounds = L.latLngBounds(latLngs);
+    map.fitBounds(bounds, { padding: [18, 18] });
+  } else if (props.fitToMarkers && latLngs.length === 1) {
+    map.setView(latLngs[0], props.zoom);
   }
 }
 
 onMounted(() => {
   map = L.map(el.value, {
-    zoomControl: false,
+    zoomControl: true,
     attributionControl: false,
+    dragging: true,
+    scrollWheelZoom: true,
+    touchZoom: true,
+    doubleClickZoom: true,
+    boxZoom: true,
+    keyboard: false,
   }).setView([props.center.lat, props.center.lng], props.zoom);
 
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19,
   }).addTo(map);
 
-  setMarker(props.marker ?? props.center);
+  renderMarkers();
 
-  // Important si la map est dans une card/overlay: force le recalcul
-  setTimeout(() => {
-    map?.invalidateSize();
-  }, 0);
+  setTimeout(() => map?.invalidateSize(), 80);
 });
 
-watch(
-  () => props.center,
-  (c) => {
-    if (!map) return;
-    map.setView([c.lat, c.lng], props.zoom);
-    setMarker(props.marker ?? c);
-  },
-  { deep: true }
-);
+watch(() => props.center, (c) => {
+  if (!map || !c) return;
+  // si fitToMarkers=true, on laisse fitBounds gérer
+  if (!props.fitToMarkers) map.setView([c.lat, c.lng], props.zoom);
+}, { deep: true });
 
-watch(
-  () => props.marker,
-  (m) => setMarker(m),
-  { deep: true }
-);
+watch(() => props.markers, () => renderMarkers(), { deep: true });
+watch(() => props.selectedStoreId, () => renderMarkers());
 
 onBeforeUnmount(() => {
+  clearLayer();
   map?.remove();
   map = null;
 });
@@ -83,8 +130,9 @@ onBeforeUnmount(() => {
 <style scoped>
 .leaflet-mini-map {
   width: 100%;
-  height: 150px; /* ✅ sans ça, rien ne s’affiche */
+  height: 150px;
   border-radius: 14px;
   overflow: hidden;
+  touch-action: none;
 }
 </style>

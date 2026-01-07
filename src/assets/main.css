@@ -420,7 +420,7 @@ body {
 .product-image-placeholder {
   height: 90px;
   border-radius: 10px;
-  background: linear-gradient(180deg, #fce9ff, #f5d0ff);
+  background: #ffffff;
   margin-bottom: 6px;
 }
 

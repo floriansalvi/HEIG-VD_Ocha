@@ -8,92 +8,83 @@
       <span class="cart-header-spacer"></span>
     </header>
 
-    <!-- ONGOING ORDER (joli) -->
-    <section v-if="hasActiveOrder" class="ongoing-card">
-      <div class="ongoing-top">
-        <div class="ongoing-title-wrap">
-          <p class="ongoing-title">Ongoing order</p>
-          <div class="ongoing-status">
-            <span class="ongoing-dot"></span>
-            <span class="ongoing-status-text">in preparation</span>
-          </div>
-        </div>
+    <!-- LOADING / ERROR stores -->
+    <p v-if="storesLoading" style="margin: 0 0 10px; font-size: 12px; color: #8b8375;">
+      Loading stores…
+    </p>
+    <p v-if="storesError" style="margin: 0 0 10px; font-size: 12px; color: #b00020;">
+      {{ storesError }}
+    </p>
 
-        <p class="ongoing-total">{{ activeOrder.total }} CHF</p>
-      </div>
-
-      <div class="ongoing-meta">
-        <div class="ongoing-meta-row">
-          <span class="ongoing-ico">📍</span>
-          <span class="ongoing-meta-text">{{ activeOrder.shop }}</span>
-        </div>
-        <div class="ongoing-meta-row">
-          <span class="ongoing-ico">⏰</span>
-          <span class="ongoing-meta-text">Pick up at {{ activeOrder.time }}</span>
-        </div>
-      </div>
-
-      <!-- mini liste items -->
-      <div class="ongoing-items">
-        <article
-          v-for="item in activeOrderItems"
-          :key="item.id"
-          class="ongoing-item"
-        >
-          <div class="ongoing-item-left">
-            <div class="ongoing-thumb"></div>
-            <div class="ongoing-item-info">
-              <p class="ongoing-item-name">{{ item.name }}</p>
-              <p class="ongoing-item-sub">{{ item.size }} • {{ item.temperature }}</p>
-              <p class="ongoing-item-sub2">x{{ item.quantity }} • No sugar</p>
-            </div>
-          </div>
-          <p class="ongoing-item-price">{{ item.price }} CHF</p>
-        </article>
-
-        <div class="ongoing-divider"></div>
-
-        <div class="ongoing-total-row">
-          <span>Total</span>
-          <span class="ongoing-total-amount">{{ activeOrder.total }} CHF</span>
-        </div>
-      </div>
-    </section>
-
-    <!-- NEW ORDER (panier normal) -->
+    <!-- CART LIST -->
     <section class="cart-list">
-      <article v-for="item in cartItems" :key="item.id" class="cart-item">
+      <article v-for="item in cartItems" :key="item.key" class="cart-item">
         <div class="cart-item-main">
-          <div class="cart-thumb"></div>
+          <div class="cart-thumb">
+            <img
+              v-if="item.imageUrl"
+              :src="item.imageUrl"
+              :alt="item.name"
+              class="cart-thumb-img"
+              loading="lazy"
+              @error="item.imageUrl = ''"
+            />
+          </div>
+
           <div class="cart-item-info">
             <p class="cart-item-name">{{ item.name }}</p>
-            <p class="cart-item-size">{{ item.size }} • {{ item.temperature }}</p>
+            <p class="cart-item-size">Size: {{ item.size }}</p>
           </div>
-          <p class="cart-item-price">{{ item.price }} CHF</p>
+
+          <p class="cart-item-price">{{ formatCHF(item.lineTotal) }} CHF</p>
         </div>
 
-        <p class="cart-item-meta">x{{ item.quantity }} • No sugar</p>
+        <div class="cart-item-meta-row">
+          <p class="cart-item-meta">{{ formatCHF(item.unitPrice) }} CHF / unit</p>
+
+          <div class="cart-qty-controls">
+            <button class="qty-btn" type="button" @click="decrease(item)" :disabled="item.quantity <= 1">−</button>
+            <span class="qty-value">{{ item.quantity }}</span>
+            <button class="qty-btn" type="button" @click="increase(item)">+</button>
+
+            <button class="cart-remove-btn" type="button" @click="remove(item)">Remove</button>
+          </div>
+        </div>
       </article>
+
+      <p
+        v-if="cartItems.length === 0"
+        style="margin: 12px 0 0; font-size: 12px; color: #8b8375; text-align: center;"
+      >
+        Your cart is empty.
+      </p>
     </section>
 
     <!-- SUMMARY -->
     <section class="cart-summary">
       <div class="cart-total-line">
         <span>Total</span>
-        <span class="cart-total-amount">{{ totalPrice }} CHF</span>
+        <span class="cart-total-amount">{{ formatCHF(totalPrice) }} CHF</span>
       </div>
 
-      <button class="cart-choose-btn" type="button" @click="openStoreOverlay">
+      <!-- CHOOSE STORE -->
+      <button
+        class="cart-choose-btn"
+        type="button"
+        :disabled="cartItems.length === 0"
+        @click="openStoreOverlay"
+      >
         <div class="cart-choose-main">
           <span>Choose store</span>
           <span class="cart-choose-sub">{{ selectedStoreLabel }}</span>
         </div>
       </button>
 
+      <!-- CHOOSE TIME -->
       <button
         class="cart-choose-btn"
         type="button"
-        :disabled="!selectedStore"
+        :disabled="!selectedStore || cartItems.length === 0"
         @click="openTimeOverlay"
       >
         <div class="cart-choose-main">
@@ -102,10 +93,11 @@
         </div>
       </button>
 
+      <!-- CONTINUE -->
       <button
         class="cart-place-btn"
         type="button"
-        :disabled="!selectedStore || !selectedTime"
+        :disabled="cartItems.length === 0 || !selectedStore || !selectedTime"
         @click="goToOrderSummary"
       >
         Continue
@@ -116,7 +108,7 @@
     <StoreSelectOverlay
       v-if="showStoreOverlay"
       :stores="stores"
-      :selected-id="selectedStore?.id || null"
+      :selected-id="selectedStore?._id || null"
       @close="showStoreOverlay = false"
       @select="handleStoreSelected"
     />
@@ -132,77 +124,172 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
-import StoreSelectOverlay from '@/components/overlays/StoreSelectOverlay.vue';
-import TimeSelectOverlay from '@/components/overlays/TimeSelectOverlay.vue';
+import { ref, computed, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import api from "@/services/api";
+import { useCartStore } from "@/stores/cart";
+
+import StoreSelectOverlay from "@/components/overlays/StoreSelectOverlay.vue";
+import TimeSelectOverlay from "@/components/overlays/TimeSelectOverlay.vue";
 
 const router = useRouter();
-const route = useRoute();
+const cart = useCartStore();
 
-/* Ongoing order depuis query */
-const hasActiveOrder = computed(() => !!route.query.activeOrder);
+/* ---------- helpers ---------- */
+function formatCHF(n) {
+  const num = Number(n);
+  if (!Number.isFinite(num)) return "—";
+  return num.toFixed(2);
+}
 
-const activeOrder = computed(() => ({
-  total: route.query.total || '17.80',
-  shop: route.query.shop || 'Lausanne, Ocha Matcha',
-  time: route.query.time || '16:15',
-}));
+/* ---------- cart computed ---------- */
+const cartItems = computed(() => {
+  const items = Array.isArray(cart.items) ? cart.items : [];
+  return items.map((it) => ({
+    key: `${it.productId}-${it.size}`,
+    productId: it.productId,
+    name: it.name,
+    size: it.size,
+    unitPrice: Number(it.unitPrice) || 0,
+    quantity: Number(it.quantity) || 1,
+    imageUrl: it.imageUrl || "",
+    lineTotal: (Number(it.unitPrice) || 0) * (Number(it.quantity) || 1),
+  }));
+});
 
-/* (mock) items ongoing */
-const activeOrderItems = ref([
-  { id: 1, name: 'Vanilla Matcha Latte', size: 'Medium', temperature: 'iced', price: '8.9', quantity: 1 },
-  { id: 2, name: 'Classic Matcha Latte', size: 'Medium', temperature: 'iced', price: '8.9', quantity: 1 },
-]);
+const totalPrice = computed(() => cart.totalAmount);
 
-/* panier normal */
-const cartItems = ref([
-  { id: 1, name: 'Vanilla Matcha Latte', size: 'Medium', temperature: 'iced', price: 8.9, quantity: 1 },
-  { id: 2, name: 'Classic Matcha Latte', size: 'Medium', temperature: 'iced', price: 8.9, quantity: 1 },
-]);
+/* ---------- qty actions ---------- */
+function increase(item) {
+  cart.setQuantity(item.productId, item.size, item.quantity + 1);
+}
+function decrease(item) {
+  cart.setQuantity(item.productId, item.size, item.quantity - 1);
+}
+function remove(item) {
+  cart.removeItem(item.productId, item.size);
+}
 
-const totalPrice = computed(() =>
-  cartItems.value.reduce((sum, item) => sum + item.price * item.quantity, 0).toFixed(2)
-);
+/* ---------- stores from API ---------- */
+const stores = ref([]);
+const storesLoading = ref(false);
+const storesError = ref("");
 
-/* stores + times (mock) */
-const stores = ref([
-  { id: 1, name: 'Ocha Matcha Lausanne', city: 'Lausanne' },
-  { id: 2, name: 'Ocha Matcha Renens', city: 'Renens' },
-]);
+async function loadStores() {
+  storesLoading.value = true;
+  storesError.value = "";
 
-const availableTimes = ref(['13:30', '13:45', '14:00', '14:15', '14:30', '14:45', '15:00']);
+  try {
+    // API: GET /api/v1/stores
+    const { data } = await api.get("/stores", {
+      params: { active: "true", page: 1, limit: 50 },
+    });
 
+    const list = Array.isArray(data?.stores) ? data.stores : [];
+    // On garde le format Mongo (_id, name, address...)
+    stores.value = list;
+  } catch (e) {
+    console.error(e);
+    storesError.value = "Impossible de charger les stores (API).";
+  } finally {
+    storesLoading.value = false;
+  }
+}
+
+onMounted(loadStores);
+
+/* ---------- choose store/time ---------- */
 const selectedStore = ref(null);
 const selectedTime = ref(null);
 
-const selectedStoreLabel = computed(() =>
-  selectedStore.value ? `${selectedStore.value.name}, ${selectedStore.value.city}` : 'No store selected'
-);
-const selectedTimeLabel = computed(() => (selectedTime.value ? selectedTime.value : 'No time selected'));
+const selectedStoreLabel = computed(() => {
+  if (!selectedStore.value) return "No store selected";
+  const city = selectedStore.value?.address?.city || "";
+  return city ? `${selectedStore.value.name}, ${city}` : selectedStore.value.name;
+});
 
-/* overlays */
+const selectedTimeLabel = computed(() => (selectedTime.value ? selectedTime.value : "No time selected"));
+
+const availableTimes = ref(["13:30", "13:45", "14:00", "14:15", "14:30", "14:45", "15:00"]);
+
 const showStoreOverlay = ref(false);
 const showTimeOverlay = ref(false);
 
-const openStoreOverlay = () => (showStoreOverlay.value = true);
-const openTimeOverlay = () => {
+function openStoreOverlay() {
+  showStoreOverlay.value = true;
+}
+function openTimeOverlay() {
   if (!selectedStore.value) return;
   showTimeOverlay.value = true;
-};
+}
 
-const handleStoreSelected = (store) => {
+function handleStoreSelected(store) {
+  // store vient de l’overlay
   selectedStore.value = store;
-  selectedTime.value = null; // important: reset time si on change de store
+  selectedTime.value = null; // reset time si store change
   showStoreOverlay.value = false;
-};
+}
 
-const handleTimeSelected = (time) => {
+function handleTimeSelected(time) {
   selectedTime.value = time;
   showTimeOverlay.value = false;
-};
+}
 
-/* navigation */
-const goBack = () => router.back();
-const goToOrderSummary = () => router.push({ name: 'order-summary' });
+/* ---------- navigation ---------- */
+function goBack() {
+  router.back();
+}
+
+function goToOrderSummary() {
+  // tu peux passer store/time en query si tu veux les afficher après
+  router.push({
+    name: "order-summary",
+    query: {
+      storeId: selectedStore.value?._id,
+      storeName: selectedStore.value?.name,
+      time: selectedTime.value,
+    },
+  });
+}
 </script>
+
+<style scoped>
+.cart-thumb {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: #d4e6b8;
+  overflow: hidden;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cart-thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.cart-item-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 6px;
+}
+.cart-qty-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.cart-remove-btn {
+  margin-left: 8px;
+  border: none;
+  background: transparent;
+  color: #8b8375;
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+}
+</style>

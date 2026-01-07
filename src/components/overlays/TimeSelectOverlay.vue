@@ -1,9 +1,9 @@
 <template>
-  <div class="overlay-backdrop" @click.self="$emit('close')">
+  <div class="overlay-backdrop" @click.self="emit('close')">
     <div class="overlay-card overlay-card--time">
       <div class="overlay-header">
         <h3 class="overlay-title">Pick up time</h3>
-        <button class="overlay-close" type="button" @click="$emit('close')">×</button>
+        <button class="overlay-close" type="button" @click="emit('close')">×</button>
       </div>
 
       <ul class="overlay-list overlay-list--time">
@@ -11,20 +11,15 @@
           <button
             type="button"
             class="overlay-list-item overlay-list-item--time"
-            :class="{ 'overlay-list-item--selected': t === selectedTime }"
-            @click="selectedTime = t"
+            :class="{ 'overlay-list-item--selected': t === localSelectedTime }"
+            @click="localSelectedTime = t"
           >
             {{ t }}
           </button>
         </li>
       </ul>
 
-      <button
-        class="overlay-primary-btn"
-        type="button"
-        :disabled="!selectedTime"
-        @click="confirm"
-      >
+      <button class="overlay-primary-btn" type="button" :disabled="!localSelectedTime" @click="confirm">
         Confirm
       </button>
     </div>
@@ -32,28 +27,25 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch } from "vue";
 
 const props = defineProps({
-  modelValue: { type: String, default: '' }, // heure sélectionnée
-  times: {
-    type: Array,
-    default: () => ['12:00', '12:15', '12:30', '12:45', '13:00', '13:15', '13:30'],
-  },
+  times: { type: Array, default: () => [] },
+  selectedTime: { type: String, default: "" },
 });
 
-const emit = defineEmits(['close', 'select']);
+const emit = defineEmits(["close", "select"]);
 
-const selectedTime = ref(props.modelValue);
+const localSelectedTime = ref(props.selectedTime);
 
 watch(
-  () => props.modelValue,
-  (v) => (selectedTime.value = v || '')
+  () => props.selectedTime,
+  (v) => (localSelectedTime.value = v || "")
 );
 
 function confirm() {
-  if (!selectedTime.value) return;
-  emit('select', selectedTime.value);
-  emit('close');
+  if (!localSelectedTime.value) return;
+  emit("select", localSelectedTime.value);
+  emit("close");
 }
 </script>

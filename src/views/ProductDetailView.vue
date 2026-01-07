@@ -20,11 +20,13 @@
       <!-- IMAGE / HERO -->
       <div class="product-hero">
         <img
-  v-if="product.image"
-  :src="imgUrl(product.image)"
-  :alt="product.name"
-  class="product-hero-img"
-/>
+          v-if="product.image"
+          :src="imgUrl(product.image)"
+          :alt="product.name"
+          class="product-hero-img"
+          loading="lazy"
+          @error="onHeroImgError"
+        />
         <div v-else class="product-hero-img-placeholder">
           {{ product.name }}
         </div>
@@ -33,7 +35,12 @@
       <!-- QUANTITÉ + PRIX -->
       <section class="product-qty-block">
         <div class="product-qty-controls">
-          <button type="button" class="qty-btn" @click="decreaseQty" :disabled="quantity === 1">
+          <button
+            type="button"
+            class="qty-btn"
+            @click="decreaseQty"
+            :disabled="quantity === 1"
+          >
             −
           </button>
           <span class="qty-value">{{ quantity }}</span>
@@ -96,6 +103,9 @@ const error = ref("");
 const quantity = ref(1);
 const size = ref("M"); // S/M/L par défaut
 
+// si l'image du hero casse, on la masque => placeholder
+const heroImgOk = ref(true);
+
 function formatCHF(n) {
   const num = Number(n);
   if (!Number.isFinite(num)) return "—";
@@ -103,14 +113,19 @@ function formatCHF(n) {
 }
 
 /**
- * Cloudinary:
- * - si ton champ `image` contient déjà une URL => on la renvoie telle quelle
- * - sinon (si un jour tu repasses en filename local) on retombe sur /uploads/...
+ * Si `product.image` est une URL Cloudinary => on la renvoie telle quelle.
+ * Sinon => fallback vers /uploads/
  */
 function imgUrl(image) {
   if (!image) return "";
-  if (image.startsWith("http://") || image.startsWith("https://")) return image;
+  if (typeof image === "string" && (image.startsWith("http://") || image.startsWith("https://"))) {
+    return image;
+  }
   return `${import.meta.env.VITE_API_URL}/uploads/${image}`;
+}
+
+function onHeroImgError() {
+  heroImgOk.value = false;
 }
 
 const availableSizes = computed(() => {
@@ -145,14 +160,12 @@ function addToCart() {
   cart.addItem({
     productId: product.value._id,
     name: product.value.name,
-    unitPrice: unitPrice.value,
     size: size.value,
-    temperature: "default", // si tu n’utilises plus, mets une valeur fixe
-    sugar: "default",       // idem
+    unitPrice: unitPrice.value,
     quantity: quantity.value,
+    imageUrl: imgUrl(product.value.image),
   });
 
-  // optionnel: redirige vers le panier
   router.push("/cart");
 }
 
@@ -163,15 +176,20 @@ function goBack() {
 async function loadProduct() {
   loading.value = true;
   error.value = "";
+  heroImgOk.value = true;
 
   try {
     const id = route.params.id;
     const { data } = await api.get(`/products/${id}`);
     product.value = data?.product || null;
 
-    if (!product.value) error.value = "Product not found.";
+    if (!product.value) {
+      error.value = "Product not found.";
+      return;
+    }
+
     // si la taille par défaut n’est pas dispo, prends la 1ère
-    if (product.value && !availableSizes.value.includes(size.value)) {
+    if (!availableSizes.value.includes(size.value)) {
       size.value = availableSizes.value[0];
     }
   } catch (e) {

@@ -1,3 +1,4 @@
+<!-- src/views/ProductsListView.vue -->
 <template>
   <div class="products-page">
     <section class="products-panel">
@@ -11,7 +12,6 @@
         {{ error }}
       </p>
 
-      <!-- grille de boissons -->
       <div class="products-grid">
         <article
           v-for="product in products"
@@ -24,7 +24,14 @@
           </div>
 
           <div class="product-image-placeholder">
-            <!-- plus tard: <img :src="imgUrl(product.image)" /> -->
+            <img
+              v-if="product.imageUrl"
+              :src="product.imageUrl"
+              :alt="product.name"
+              class="product-card-img"
+              loading="lazy"
+              @error="onImgError(product)"
+            />
           </div>
 
           <div class="product-card-body">
@@ -44,12 +51,22 @@
       >
         No products found.
       </p>
+
+      <!-- ✅ VOIR PLUS -->
+      <button
+        v-if="!loading && !error && showSeeMore"
+        type="button"
+        class="see-more-btn"
+        @click="seeMore"
+      >
+        See more
+      </button>
     </section>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import { useRouter } from "vue-router";
 import api from "@/services/api";
 
@@ -59,29 +76,51 @@ const products = ref([]);
 const loading = ref(false);
 const error = ref("");
 
+const page = ref(1);
+const limit = ref(6); // ✅ 6 au départ
+const totalProducts = ref(0);
+
+const CLOUDINARY_CLOUD_NAME = "dabosy2w2";
+
 function formatCHF(n) {
   const num = Number(n);
   if (!Number.isFinite(num)) return "— CHF";
   return `${num.toFixed(2)} CHF`;
 }
 
-// optionnel si tu sers tes images depuis le back
-function imgUrl(filename) {
-  if (!filename) return "";
-  return `${import.meta.env.VITE_API_URL}/uploads/${filename}`;
+function buildImageUrl(imageValue) {
+  if (!imageValue) return "";
+  if (imageValue.startsWith("http://") || imageValue.startsWith("https://")) {
+    return imageValue;
+  }
+  const publicId = String(imageValue).replace(/\.(jpg|jpeg|png|webp)$/i, "");
+  return `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/image/upload/f_auto,q_auto/${publicId}`;
 }
+
+function onImgError(product) {
+  product.imageUrl = "";
+}
+
+const showSeeMore = computed(() => {
+  // bouton visible si on a encore des produits à afficher
+  return totalProducts.value > products.value.length;
+});
 
 async function loadProducts() {
   loading.value = true;
   error.value = "";
 
   try {
-    // ton backend: GET /products?active=true
     const { data } = await api.get("/products", {
-      params: { active: "true", page: 1, limit: 100 },
+      params: {
+        active: "true",
+        page: page.value,
+        limit: limit.value,
+      },
     });
 
     const list = Array.isArray(data?.products) ? data.products : [];
+    totalProducts.value = Number(data?.totalProducts || 0);
 
     products.value = list.map((p) => ({
       id: p._id,
@@ -89,6 +128,7 @@ async function loadProducts() {
       name: p.name,
       basePriceCHF: p.basePriceCHF,
       image: p.image,
+      imageUrl: buildImageUrl(p.image),
       description: p.description,
       category: p.category,
       size: p.size,
@@ -102,11 +142,37 @@ async function loadProducts() {
   }
 }
 
+function seeMore() {
+  limit.value +=10;
+  loadProducts();
+}
+
 function goToProduct(product) {
-  // adapte selon ton router: id ou slug
-  // ex: /products/:id
   router.push(`/products/${product.id}`);
 }
 
 onMounted(loadProducts);
 </script>
+
+<style scoped>
+.product-card-img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  border-radius: 10px;
+}
+
+.see-more-btn {
+  width: 100%;
+  margin-top: 14px;
+  border: none;
+  border-radius: 999px;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  background: #000;
+  color: #fff;
+  cursor: pointer;
+}
+</style>
