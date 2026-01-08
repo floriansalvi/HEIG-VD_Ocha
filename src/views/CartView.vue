@@ -1,4 +1,3 @@
-<!-- src/views/CartView.vue -->
 <template>
   <div class="cart-page">
     <!-- HEADER -->
@@ -8,20 +7,22 @@
       <span class="cart-header-spacer"></span>
     </header>
 
-    <!-- LOADING / ERROR: stores -->
+    <!-- STORES LOADING/ERROR -->
     <p v-if="storesLoading" class="hint">Loading stores…</p>
     <p v-if="storesError" class="error">{{ storesError }}</p>
 
-    <!-- ✅ ONGOING ORDER (depuis DB) -->
+    <!-- ONGOING ORDER -->
     <section v-if="ongoingOrder" class="ongoing-card">
       <div class="ongoing-top">
         <div class="ongoing-title-wrap">
           <p class="ongoing-title">Ongoing order</p>
           <div class="ongoing-status">
             <span class="ongoing-dot"></span>
-            <span class="ongoing-status-text">{{ ongoingOrderStatusLabel }}</span>
+            <span class="ongoing-status-text">{{ ongoingStatusLabel }}</span>
           </div>
         </div>
+
+        <!-- total en haut à droite -->
         <p class="ongoing-total">{{ formatCHF(ongoingTotal) }} CHF</p>
       </div>
 
@@ -36,37 +37,21 @@
         </div>
       </div>
 
-      <div class="ongoing-items" v-if="ongoingItems.length">
-        <article v-for="it in ongoingItems" :key="it._key" class="ongoing-item">
-          <div class="ongoing-item-left">
-            <div class="ongoing-thumb"></div>
-            <div class="ongoing-item-info">
-              <p class="ongoing-item-name">{{ it.name }}</p>
-              <p class="ongoing-item-sub">Size: {{ it.size || "—" }}</p>
-              <p class="ongoing-item-sub2">x{{ it.quantity }}</p>
-            </div>
-          </div>
-          <p class="ongoing-item-price">{{ formatCHF(it.lineTotal) }} CHF</p>
-        </article>
+      <div class="ongoing-bottom">
+        <p class="ongoing-summary">
+          {{ ongoingSummary }}
+        </p>
 
-        <div class="ongoing-divider"></div>
-
-        <div class="ongoing-total-row">
-          <span>Total</span>
-          <span class="ongoing-total-amount">{{ formatCHF(ongoingTotal) }} CHF</span>
-        </div>
+        <!-- prix en bas à droite (comme demandé) -->
+        <p class="ongoing-bottom-price">{{ formatCHF(ongoingTotal) }} CHF</p>
       </div>
-
-      <p v-else class="hint" style="margin-top: 8px;">
-        Items not loaded.
-      </p>
     </section>
 
-    <!-- LOADING / ERROR: orders -->
+    <!-- ORDERS LOADING/ERROR -->
     <p v-if="ordersLoading" class="hint">Loading your orders…</p>
     <p v-if="ordersError" class="error">{{ ordersError }}</p>
 
-    <!-- CART LIST (draft local) -->
+    <!-- CART LIST (local) -->
     <section class="cart-list">
       <article v-for="item in cartItems" :key="item.key" class="cart-item">
         <div class="cart-item-main">
@@ -97,7 +82,9 @@
             <span class="qty-value">{{ item.quantity }}</span>
             <button class="qty-btn" type="button" @click="increase(item)">+</button>
 
-            <button class="cart-remove-btn" type="button" @click="remove(item)">Remove</button>
+            <button class="cart-remove-btn" type="button" @click="remove(item)">
+              Remove
+            </button>
           </div>
         </div>
       </article>
@@ -114,7 +101,6 @@
         <span class="cart-total-amount">{{ formatCHF(totalPrice) }} CHF</span>
       </div>
 
-      <!-- CHOOSE STORE -->
       <button class="cart-choose-btn" type="button" :disabled="cartItems.length === 0" @click="openStoreOverlay">
         <div class="cart-choose-main">
           <span>Choose store</span>
@@ -122,7 +108,6 @@
         </div>
       </button>
 
-      <!-- CHOOSE TIME -->
       <button class="cart-choose-btn" type="button" :disabled="cartItems.length === 0" @click="openTimeOverlay">
         <div class="cart-choose-main">
           <span>Choose time</span>
@@ -130,7 +115,6 @@
         </div>
       </button>
 
-      <!-- CONTINUE -->
       <button
         class="cart-place-btn"
         type="button"
@@ -151,13 +135,13 @@
     />
 
     <TimeSelectOverlay
-      v-if="showTimeOverlay"
-      :times="availableTimes"
-      :selected-time="selectedTime"
-      :store-selected="!!selectedStore"
-      @close="showTimeOverlay = false"
-      @select="handleTimeSelected"
-    />
+  v-if="showTimeOverlay"
+  :times="availableTimes"
+  :selected-time="selectedTime"
+  :store-selected="!!selectedStore"
+  @close="showTimeOverlay = false"
+  @select="handleTimeSelected"
+/>
   </div>
 </template>
 
@@ -182,16 +166,16 @@ function formatCHF(n) {
   return num.toFixed(2);
 }
 
-function toHHMM(d) {
-  const dt = d instanceof Date ? d : new Date(d);
-  if (Number.isNaN(dt.getTime())) return "—";
-  const hh = String(dt.getHours()).padStart(2, "0");
-  const mm = String(dt.getMinutes()).padStart(2, "0");
+function toHHMM(dateLike) {
+  const d = dateLike instanceof Date ? dateLike : new Date(dateLike);
+  if (Number.isNaN(d.getTime())) return "—";
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
   return `${hh}:${mm}`;
 }
 
 function minutesOf(hhmm) {
-  const [h, m] = String(hhmm || "").split(":").map((x) => Number(x));
+  const [h, m] = String(hhmm || "").split(":").map(Number);
   if (!Number.isFinite(h) || !Number.isFinite(m)) return null;
   return h * 60 + m;
 }
@@ -199,12 +183,11 @@ function minutesOf(hhmm) {
 function ceilToNextStepMinutes(date, step = 15) {
   const d = new Date(date);
   if (Number.isNaN(d.getTime())) return null;
-  const ms = d.getTime();
   const stepMs = step * 60 * 1000;
-  return new Date(Math.ceil(ms / stepMs) * stepMs);
+  return new Date(Math.ceil(d.getTime() / stepMs) * stepMs);
 }
 
-/* ---------- local draft cart ---------- */
+/* ---------- local cart ---------- */
 const cartItems = computed(() => {
   const items = Array.isArray(cart.items) ? cart.items : [];
   return items.map((it) => ({
@@ -240,18 +223,16 @@ async function loadStores() {
   storesLoading.value = true;
   storesError.value = "";
   try {
-    const { data } = await api.get("/stores", {
-      params: { active: "true", page: 1, limit: 50 },
-    });
+    const { data } = await api.get("/stores", { params: { active: "true", page: 1, limit: 50 } });
     stores.value = Array.isArray(data?.stores) ? data.stores : [];
   } catch (e) {
-    storesError.value = e?.response?.data?.message || "Impossible de charger les stores (API).";
+    storesError.value = e?.response?.data?.message || "Failed to load stores";
   } finally {
     storesLoading.value = false;
   }
 }
 
-/* ---------- orders from DB (ongoing) ---------- */
+/* ---------- orders (DB) ---------- */
 const ordersLoading = ref(false);
 const ordersError = ref("");
 const myOrders = ref([]);
@@ -264,10 +245,11 @@ async function loadMyOrders() {
 
   ordersLoading.value = true;
   try {
-    // ✅ backend route: GET /auth/me/orders
-    const { data } = await api.get("/auth/me/orders");
+    // ✅ VRAIE ROUTE d’après ton code serveur: /api/v1/users/me/orders
+    const { data } = await api.get("/users/orders", { params: { page: 1, limit: 10 } });
     myOrders.value = Array.isArray(data?.orders) ? data.orders : [];
   } catch (e) {
+    console.error("Error loading orders:", e);
     ordersError.value = e?.response?.data?.message || "Failed to load orders";
   } finally {
     ordersLoading.value = false;
@@ -276,67 +258,71 @@ async function loadMyOrders() {
 
 const ongoingOrder = computed(() => {
   const list = Array.isArray(myOrders.value) ? myOrders.value : [];
-  // on garde tout ce qui n'est pas "récupérée"
+  // status enum: ["en préparation", "prête", "récupérée"]
   return list.find((o) => String(o?.status || "").toLowerCase() !== "récupérée") || null;
 });
 
-const ongoingOrderStatusLabel = computed(() => ongoingOrder.value?.status || "en préparation");
+const ongoingStatusLabel = computed(() => ongoingOrder.value?.status || "en préparation");
 
 const ongoingPickupLabel = computed(() => {
-  const v = ongoingOrder.value?.pickup;
-  if (!v) return "—";
-  return toHHMM(v);
+  const pickup = ongoingOrder.value?.pickup;
+  return pickup ? toHHMM(pickup) : "—";
 });
 
 const ongoingShopLabel = computed(() => {
-  const s = ongoingOrder.value?.store_id; // populated par backend
+  const s = ongoingOrder.value?.store_id; // populate("store_id") côté backend
   if (!s) return "—";
   const city = s?.address?.city;
   return city ? `${s.name} — ${city}` : s.name;
 });
 
-// items: GET /orders/:id/items
+const ongoingTotal = computed(() => {
+  const o = ongoingOrder.value;
+  if (!o) return 0;
+  const t = Number(o.total_price_chf);
+  return Number.isFinite(t) ? t : 0;
+});
+
+/* ---------- order items -> résumé ---------- */
 const ongoingItems = ref([]);
-const ongoingItemsLoading = ref(false);
 
 async function loadOngoingItems() {
   ongoingItems.value = [];
   const id = ongoingOrder.value?._id;
   if (!id) return;
 
-  ongoingItemsLoading.value = true;
   try {
     const { data } = await api.get(`/orders/${id}/items`);
-    const items = Array.isArray(data?.items) ? data.items : [];
-    ongoingItems.value = items.map((it, idx) => {
-      const qty = Number(it?.quantity) || 1; // si ton modèle n'a pas quantity, ça restera 1
-      const unit = Number(it?.final_price_chf) || 0;
-      return {
-        _key: it?._id || `${idx}`,
-        name: it?.product_name || it?.product_id?.name || "Product",
-        size: it?.size,
-        quantity: qty,
-        lineTotal: unit * qty,
-      };
-    });
-  } catch {
-    // on laisse l'UI afficher "Items not loaded."
-  } finally {
-    ongoingItemsLoading.value = false;
+    ongoingItems.value = Array.isArray(data?.items) ? data.items : [];
+  } catch (e) {
+    console.error("Error loading ongoing items:", e);
+    ongoingItems.value = [];
   }
 }
 
-const ongoingTotal = computed(() => {
-  const o = ongoingOrder.value;
-  if (!o) return 0;
-  const backendTotal = Number(o.total_price_chf);
-  if (Number.isFinite(backendTotal)) return backendTotal;
-  return ongoingItems.value.reduce((s, it) => s + Number(it.lineTotal || 0), 0);
+const ongoingSummary = computed(() => {
+  const items = Array.isArray(ongoingItems.value) ? ongoingItems.value : [];
+  if (!items.length) return "—";
+  const itemNames = items
+    .slice(0, 3)
+    .map((it) => {
+      const name = it?.product_name || it?.name || "Product";
+      const qty = it?.quantity || 1;
+      return qty > 1 ? `${name} (×${qty})` : name;
+    })
+    .join(", ");
+  
+  if (items.length > 3) {
+    return `${itemNames}, and ${items.length - 3} more`;
+  }
+  return itemNames;
 });
 
-watch(ongoingOrder, loadOngoingItems, { immediate: true });
+watch(ongoingOrder, () => {
+  loadOngoingItems();
+}, { immediate: true });
 
-/* ---------- choose store/time (from backend opening_hours) ---------- */
+/* ---------- choose store/time (opening_hours) ---------- */
 const selectedStore = ref(null);
 const selectedTime = ref("");
 
@@ -349,11 +335,9 @@ const selectedStoreLabel = computed(() => {
 const selectedTimeLabel = computed(() => (selectedTime.value ? selectedTime.value : "No time selected"));
 
 function openingHoursForToday(store) {
-  // opening_hours: [ [], ["09:00","18:30"], ... ] (Dimanche=0)
   const oh = store?.opening_hours;
   if (!Array.isArray(oh) || oh.length < 7) return null;
-
-  const day = new Date().getDay(); // 0..6
+  const day = new Date().getDay(); // 0..6 (dimanche=0)
   const range = oh[day];
   if (!Array.isArray(range) || range.length < 2) return null;
   const [open, close] = range;
@@ -361,7 +345,6 @@ function openingHoursForToday(store) {
   return { open, close };
 }
 
-// propose des horaires uniquement après l'heure actuelle (+ arrondi 15min)
 const availableTimes = computed(() => {
   const s = selectedStore.value;
   if (!s) return [];
@@ -374,8 +357,7 @@ const availableTimes = computed(() => {
   if (openMin == null || closeMin == null) return [];
   if (closeMin <= openMin) return [];
 
-  const now = new Date();
-  const start = ceilToNextStepMinutes(now, 15);
+  const start = ceilToNextStepMinutes(new Date(), 15);
   if (!start) return [];
 
   const startMin = start.getHours() * 60 + start.getMinutes();
@@ -403,13 +385,10 @@ const showTimeOverlay = ref(false);
 function openStoreOverlay() {
   showStoreOverlay.value = true;
 }
-
 function openTimeOverlay() {
-  // si pas de store -> on ouvre quand même l'overlay, il montrera "Select a store first."
   showTimeOverlay.value = true;
 }
 
-// ✅ robuste: overlay peut renvoyer objet store OU juste l'id
 function handleStoreSelected(storeOrId) {
   const s =
     typeof storeOrId === "string"
@@ -450,17 +429,87 @@ onMounted(async () => {
 
 <style scoped>
 .hint {
-  margin: 0 0 10px;
+  margin: 0 16px 10px;
   font-size: 12px;
   color: #8b8375;
 }
 .error {
-  margin: 0 0 10px;
+  margin: 0 16px 10px;
   font-size: 12px;
   color: #b00020;
 }
 
-/* thumbs */
+/* ongoing */
+.ongoing-card {
+  margin: 12px 16px;
+  padding: 14px;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.07);
+}
+.ongoing-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.ongoing-title {
+  margin: 0;
+  font-weight: 800;
+  font-size: 14px;
+}
+.ongoing-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  font-size: 12px;
+  color: #6d655a;
+}
+.ongoing-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #5f8f3e;
+}
+.ongoing-total {
+  margin: 0;
+  font-weight: 800;
+  font-size: 14px;
+}
+.ongoing-meta {
+  margin-top: 10px;
+  display: grid;
+  gap: 6px;
+}
+.ongoing-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.ongoing-bottom {
+  margin-top: 12px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+.ongoing-summary {
+  margin: 0;
+  font-size: 12px;
+  color: #6d655a;
+  line-height: 1.3;
+  max-width: 75%;
+}
+.ongoing-bottom-price {
+  margin: 0;
+  font-weight: 800;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+/* cart thumbs */
 .cart-thumb {
   width: 42px;
   height: 42px;
@@ -498,101 +547,5 @@ onMounted(async () => {
   font-size: 12px;
   cursor: pointer;
   text-decoration: underline;
-}
-
-/* ongoing block (minimal: si tu as déjà tes styles, tu peux enlever) */
-.ongoing-card {
-  margin: 12px 16px;
-  padding: 12px;
-  border-radius: 16px;
-  background: #fff;
-  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.06);
-}
-.ongoing-top {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 10px;
-}
-.ongoing-title {
-  margin: 0;
-  font-weight: 700;
-}
-.ongoing-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 4px;
-  font-size: 12px;
-  color: #6d655a;
-}
-.ongoing-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  background: #5f8f3e;
-  display: inline-block;
-}
-.ongoing-total {
-  margin: 0;
-  font-weight: 700;
-}
-.ongoing-meta {
-  margin-top: 10px;
-  display: grid;
-  gap: 6px;
-}
-.ongoing-meta-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-}
-.ongoing-items {
-  margin-top: 12px;
-}
-.ongoing-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 8px 0;
-}
-.ongoing-item-left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.ongoing-thumb {
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
-  background: #d4e6b8;
-}
-.ongoing-item-name {
-  margin: 0;
-  font-weight: 600;
-  font-size: 13px;
-}
-.ongoing-item-sub,
-.ongoing-item-sub2 {
-  margin: 0;
-  font-size: 12px;
-  color: #6d655a;
-}
-.ongoing-item-price {
-  margin: 0;
-  font-weight: 600;
-  font-size: 13px;
-}
-.ongoing-divider {
-  height: 1px;
-  background: rgba(0, 0, 0, 0.08);
-  margin: 8px 0;
-}
-.ongoing-total-row {
-  display: flex;
-  justify-content: space-between;
-  font-weight: 700;
 }
 </style>

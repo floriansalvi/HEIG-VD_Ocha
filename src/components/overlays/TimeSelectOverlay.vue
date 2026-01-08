@@ -10,10 +10,6 @@
         Select a store first.
       </p>
 
-      <p v-else-if="!times.length" class="overlay-hint">
-        No pick up times available (store closed or opening hours missing).
-      </p>
-
       <ul v-else class="overlay-list overlay-list--time">
         <li v-for="t in times" :key="t">
           <button
@@ -24,6 +20,10 @@
           >
             {{ t }}
           </button>
+        </li>
+
+        <li v-if="times.length === 0" class="overlay-hint" style="list-style:none; padding: 10px 0;">
+          No available times today.
         </li>
       </ul>
 
@@ -45,7 +45,7 @@ import { ref, watch } from "vue";
 const props = defineProps({
   times: { type: Array, default: () => [] },
   selectedTime: { type: String, default: "" },
-  storeSelected: { type: Boolean, default: false },
+  storeSelected: { type: Boolean, default: false }, // ✅ IMPORTANT
 });
 
 const emit = defineEmits(["close", "select"]);
@@ -57,18 +57,18 @@ watch(
   (v) => (localSelectedTime.value = v || "")
 );
 
+// Si on change de store (storeSelected passe à false), on reset la sélection
 watch(
-  () => props.times,
-  () => {
-    // si la time sélectionnée n'existe plus dans la liste, reset
-    if (localSelectedTime.value && !props.times.includes(localSelectedTime.value)) {
-      localSelectedTime.value = "";
-    }
+  () => props.storeSelected,
+  (v) => {
+    if (!v) localSelectedTime.value = "";
   }
 );
 
 function confirm() {
-  if (!props.storeSelected || !localSelectedTime.value) return;
+  if (!props.storeSelected) return;
+  if (!localSelectedTime.value) return;
+
   emit("select", localSelectedTime.value);
   emit("close");
 }
@@ -76,8 +76,8 @@ function confirm() {
 
 <style scoped>
 .overlay-hint {
-  margin: 8px 0 12px;
-  font-size: 12px;
+  margin: 6px 0 12px;
   color: #8b8375;
+  font-size: 13px;
 }
 </style>
