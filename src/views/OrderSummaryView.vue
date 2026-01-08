@@ -1,61 +1,50 @@
 <!-- src/views/OrderSummaryView.vue -->
 <template>
   <div class="order-page">
-    <!-- HEADER -->
     <header class="order-header">
       <button class="icon-btn" type="button" @click="goBack">←</button>
       <h1 class="order-header-title">Order</h1>
       <span class="order-header-spacer"></span>
     </header>
 
-    <!-- CARTE RÉSUMÉ -->
+    <p v-if="error" class="order-error">{{ error }}</p>
+
     <section class="order-card">
-      <!-- Ligne “My order” -->
       <div class="order-product-row">
         <div class="order-product-img-placeholder"></div>
 
         <div class="order-product-info">
           <p class="order-product-name">My order</p>
-          <p class="order-product-meta">
-            {{ orderMeta }}
-          </p>
+          <p class="order-product-meta">{{ oneItemMeta }}</p>
         </div>
 
-        <span class="order-product-price">{{ total }} CHF</span>
+        <span class="order-product-price">{{ formatCHF(totalAmount) }} CHF</span>
       </div>
 
-      <!-- Ligne shop -->
       <div class="order-info-row">
         <div class="order-info-left">
           <span class="order-info-icon">📍</span>
           <div>
             <p class="order-info-label">The shop</p>
-            <p class="order-info-value">{{ shopName }}</p>
+            <p class="order-info-value">{{ shopLabel }}</p>
           </div>
         </div>
       </div>
 
-      <!-- MAP (Leaflet) -->
-      <div class="order-map-card">
-        <div ref="mapEl" class="order-map"></div>
-      </div>
-
-      <!-- Ligne time -->
       <div class="order-info-row order-info-row--time">
         <div class="order-info-left">
           <span class="order-info-icon">⏰</span>
           <div>
             <p class="order-info-label">Pick up time</p>
-            <p class="order-info-value">{{ pickupTime }}</p>
+            <p class="order-info-value">{{ pickupTimeLabel }}</p>
           </div>
         </div>
       </div>
 
-      <!-- Bouton principal -->
       <button
         class="order-place-btn"
         type="button"
-        :disabled="isPlacing"
+        :disabled="isPlacing || !canPlace"
         @click="placeOrder"
       >
         <span v-if="!isPlacing">Place order</span>
@@ -63,14 +52,14 @@
       </button>
     </section>
 
-    <!-- OVERLAY SUCCESS -->
+    <!-- SUCCESS -->
     <div v-if="showSuccessOverlay" class="order-success-backdrop">
       <div class="order-success-card">
         <div class="order-success-icon">✅</div>
         <h2 class="order-success-title">Order confirmed</h2>
         <p class="order-success-text">
-          Your drinks will be ready at <strong>{{ pickupTime }}</strong> at
-          <strong>{{ shopName }}</strong>.
+          Your drinks will be ready at <strong>{{ pickupTimeLabel }}</strong> at
+          <strong>{{ shopLabel }}</strong>.
         </p>
 
         <button type="button" class="order-success-btn" @click="goToCart">
@@ -82,146 +71,168 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { useRouter } from 'vue-router';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-
-// ✅ Fix icônes Leaflet (sinon markers souvent invisibles avec Vite)
-import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
-import markerIcon from 'leaflet/dist/images/marker-icon.png';
-import markerShadow from 'leaflet/dist/images/marker-shadow.png';
-
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: markerIcon2x,
-  iconUrl: markerIcon,
-  shadowUrl: markerShadow,
-});
+import { computed, ref, onMounted } from "vue";
+import { useRouter, useRoute } from "vue-router";
+import api from "@/services/api";
+import { useCartStore } from "@/stores/cart";
 
 const router = useRouter();
-
-/**
- * Pour l’instant: valeurs mock.
- * Après, tu peux les prendre depuis Pinia + selection store/time.
- */
-const total = ref('17.80');
-const shopName = ref('Lausanne, Ocha Matcha');
-const pickupTime = ref('16:15');
-
-const orderMeta = computed(() => 'Vanilla Matcha Latte, Classic Matcha Latte');
+const route = useRoute();
+const cart = useCartStore();
 
 const isPlacing = ref(false);
 const showSuccessOverlay = ref(false);
+const error = ref("");
 
-/* -----------------------------
-   LEAFLET MAP
------------------------------ */
-const mapEl = ref(null);
-let mapInstance = null;
-let markerInstance = null;
+function formatCHF(n) {
+  const num = Number(n);
+  if (!Number.isFinite(num)) return "0.00";
+  return num.toFixed(2);
+}
 
-// mini “db” de coordonnées (tu pourras remplacer par tes stores réels)
-const coords = computed(() => {
-  const name = (shopName.value || '').toLowerCase();
+// query depuis CartView
+const storeId = computed(() =>
+  typeof route.query.storeId === "string" ? route.query.storeId : ""
+);
+const storeName = computed(() =>
+  typeof route.query.storeName === "string" ? route.query.storeName : ""
+);
+const pickupHHMM = computed(() =>
+  typeof route.query.time === "string" ? route.query.time : ""
+);
 
-  // Lausanne centre approx
-  if (name.includes('lausanne')) return { lat: 46.5191, lng: 6.6336 };
+const shopLabel = computed(() => storeName.value || "No shop selected");
+const pickupTimeLabel = computed(() => pickupHHMM.value || "No time selected");
 
-  // Renens approx
-  if (name.includes('renens')) return { lat: 46.5390, lng: 6.5880 };
+// panier
+const cartItems = computed(() => (Array.isArray(cart.items) ? cart.items : []));
+const totalAmount = computed(() => Number(cart.totalAmount) || 0);
 
-  // fallback
-  return { lat: 46.5191, lng: 6.6336 };
+// ✅ 1 item affiché (comme ton screen)
+const oneItemMeta = computed(() => {
+  const items = cartItems.value;
+  if (!items.length) return "No items";
+  const it = items[0];
+  const q = Number(it.quantity) || 1;
+  return `${it.name}${q ? ` x${q}` : ""}`;
 });
 
-const renderMap = () => {
-  if (!mapEl.value) return;
+const canPlace = computed(() => {
+  return (
+    !!storeId.value &&
+    !!pickupHHMM.value &&
+    cartItems.value.length > 0 &&
+    !!toPickupISO(pickupHHMM.value)
+  );
+});
 
-  const { lat, lng } = coords.value;
+/**
+ * ✅ Convertit "HH:MM" en ISO Date
+ * - aujourd’hui à HH:MM
+ * - si c’est déjà passé -> demain
+ */
+function toPickupISO(hhmm) {
+  const parts = String(hhmm || "").split(":");
+  if (parts.length !== 2) return null;
 
-  // 1) create map once
-  if (!mapInstance) {
-    mapInstance = L.map(mapEl.value, {
-      zoomControl: false,
-      attributionControl: false,
-    }).setView([lat, lng], 13);
+  const hh = Number(parts[0]);
+  const mm = Number(parts[1]);
+  if (!Number.isFinite(hh) || !Number.isFinite(mm)) return null;
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-    }).addTo(mapInstance);
+  const now = new Date();
+  const d = new Date(now);
+  d.setSeconds(0, 0);
+  d.setHours(hh, mm, 0, 0);
+
+  // si l'heure est passée -> demain
+  if (d.getTime() < now.getTime()) {
+    d.setDate(d.getDate() + 1);
   }
 
-  // 2) marker
-  if (markerInstance) markerInstance.remove();
-  markerInstance = L.marker([lat, lng]).addTo(mapInstance);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toISOString();
+}
 
-  // 3) refresh size (important dans des containers flex/scroll)
-  setTimeout(() => {
-    mapInstance?.invalidateSize();
-    mapInstance?.setView([lat, lng], 13);
-  }, 50);
-};
+function goBack() {
+  router.back();
+}
 
-onMounted(() => {
-  renderMap();
-});
-
-watch(coords, () => {
-  renderMap();
-});
-
-onBeforeUnmount(() => {
-  if (mapInstance) {
-    mapInstance.remove();
-    mapInstance = null;
-    markerInstance = null;
+async function placeOrder() {
+  if (isPlacing.value || !canPlace.value) {
+    if (!cartItems.value.length) error.value = "Your cart is empty.";
+    return;
   }
-});
 
-/* -----------------------------
-   ACTIONS
------------------------------ */
-const placeOrder = () => {
-  if (isPlacing.value) return;
+  error.value = "";
+  showSuccessOverlay.value = false;
   isPlacing.value = true;
 
-  // plus tard => appel API create order
-  setTimeout(() => {
+  const pickupISO = toPickupISO(pickupHHMM.value);
+  if (!pickupISO) {
+    error.value = "Invalid pickup time.";
     isPlacing.value = false;
+    return;
+  }
+
+  // ✅ backend attend: store_id, pickup(Date), items[]
+  const payload = {
+    store_id: storeId.value,
+    pickup: pickupISO,
+    items: cartItems.value.map((it) => ({
+      product_id: it.productId,
+      size: it.size,
+      // quantity ignorée côté backend actuel => ok de l'envoyer ou pas
+    })),
+  };
+
+  try {
+    const res = await api.post("/orders", payload);
+
+    // ✅ success UNIQUEMENT si status 201/200
+    if (res?.status !== 201 && res?.status !== 200) {
+      throw new Error("Unexpected response");
+    }
+
+    const data = res.data;
+    const orderId = data?.order?._id || data?.order?.id || data?._id || data?.id;
+    if (orderId) localStorage.setItem("active_order_id", String(orderId));
+
     showSuccessOverlay.value = true;
-  }, 700);
-};
+  } catch (e) {
+    console.log("PLACE ORDER status:", e?.response?.status);
+    console.log("PLACE ORDER data:", e?.response?.data);
 
-const goBack = () => {
-  router.back();
-};
+    showSuccessOverlay.value = false;
+    error.value =
+      e?.response?.data?.message ||
+      e?.response?.data?.error ||
+      e?.message ||
+      "Impossible de créer la commande.";
+  } finally {
+    isPlacing.value = false;
+  }
+}
 
-const goToCart = () => {
+function goToCart() {
   showSuccessOverlay.value = false;
+  router.push("/cart");
+}
 
-  router.push({
-    path: '/cart',
-    query: {
-      activeOrder: '1',
-      total: total.value,
-      shop: shopName.value,
-      time: pickupTime.value,
-    },
-  });
-};
+// optionnel: si l’utilisateur arrive ici sans items, on l’empêche direct
+onMounted(() => {
+  if (!cartItems.value.length) {
+    error.value = "Your cart is empty.";
+  }
+});
 </script>
 
 <style scoped>
-/* map must have a real height, sinon rien ne s’affiche */
-.order-map {
-  height: 140px;
-  width: 100%;
-  border-radius: 16px;
-  overflow: hidden;
+.order-error {
+  margin: 0 16px 10px;
+  font-size: 12px;
+  color: #b00020;
 }
 
-/* overlay success */
 .order-success-backdrop {
   position: absolute;
   inset: 0;
@@ -241,25 +252,6 @@ const goToCart = () => {
   background: #5f8f3e;
   color: #fff;
   text-align: center;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.25);
-}
-
-.order-success-icon {
-  font-size: 28px;
-  margin-bottom: 8px;
-}
-
-.order-success-title {
-  margin: 0 0 8px;
-  font-size: 16px;
-  font-weight: 700;
-}
-
-.order-success-text {
-  margin: 0 0 14px;
-  font-size: 13px;
-  line-height: 1.35;
-  opacity: 0.95;
 }
 
 .order-success-btn {

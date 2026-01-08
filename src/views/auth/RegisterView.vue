@@ -12,73 +12,36 @@
 
         <form class="auth-form" @submit.prevent="onSubmit">
           <div>
-            <div class="auth-field-label">
-              <span>first name</span>
-            </div>
+            <div class="auth-field-label"><span>display name</span></div>
             <div class="auth-input-line">
-              <input
-                v-model.trim="firstName"
-                type="text"
-                placeholder="First name"
-                required
-              />
+              <input v-model.trim="displayName" type="text" placeholder="OvoBreak" required />
             </div>
           </div>
 
           <div>
-            <div class="auth-field-label">
-              <span>last name</span>
-            </div>
+            <div class="auth-field-label"><span>email</span></div>
             <div class="auth-input-line">
-              <input
-                v-model.trim="lastName"
-                type="text"
-                placeholder="Last name"
-                required
-              />
+              <input v-model.trim="email" type="email" autocomplete="email" placeholder="you@matcha.ch" required />
             </div>
           </div>
 
           <div>
-            <div class="auth-field-label">
-              <span>email</span>
-            </div>
+            <div class="auth-field-label"><span>password</span></div>
             <div class="auth-input-line">
-              <input
-                v-model.trim="email"
-                type="email"
-                autocomplete="email"
-                placeholder="you@matcha.ch"
-                required
-              />
-            </div>
-          </div>
-
-          <div>
-            <div class="auth-field-label">
-              <span>password</span>
-            </div>
-            <div class="auth-input-line">
-              <input
-                v-model="password"
-                type="password"
-                autocomplete="new-password"
-                placeholder="••••••••"
-                required
-              />
+              <input v-model="password" type="password" autocomplete="new-password" placeholder="PainComplet?02" required />
             </div>
           </div>
 
           <p v-if="error" class="auth-error">{{ error }}</p>
 
-          <button class="auth-primary-btn" type="submit">
-            sign up
+          <button class="auth-primary-btn" type="submit" :disabled="loading">
+            <span v-if="!loading">sign up</span>
+            <span v-else>loading…</span>
           </button>
         </form>
 
         <p class="auth-bottom">
-          already have an account?
-          <RouterLink to="/login">Log in</RouterLink>
+          already have an account? <RouterLink to="/login">Log in</RouterLink>
         </p>
       </div>
     </div>
@@ -86,7 +49,7 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import { RouterLink, useRouter, useRoute } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
 import logo from "@/assets/logo-ocha.png";
@@ -95,28 +58,25 @@ const router = useRouter();
 const route = useRoute();
 const auth = useAuthStore();
 
-const firstName = ref("");
-const lastName = ref("");
+const displayName = ref("");
 const email = ref("");
 const password = ref("");
-const error = ref("");
+
+const loading = computed(() => auth.loading);
+const error = computed(() => auth.error);
 
 const onSubmit = async () => {
-  error.value = "";
-
-  if (!firstName.value || !lastName.value || !email.value || !password.value) {
-    error.value = "Please fill all fields.";
-    return;
-  }
-
   try {
-    // 👉 plus tard : await auth.register({ firstName, lastName, email, password })
-    auth.setToken("fake-token");
+    await auth.register({
+      email: email.value,
+      password: password.value,
+      display_name: displayName.value, // 👈 IMPORTANT: display_name exactement comme le backend
+    });
 
     const redirect = route.query.redirect;
     router.replace(typeof redirect === "string" ? redirect : "/");
   } catch {
-    error.value = "Registration failed.";
+    // auth.error déjà rempli
   }
 };
 </script>

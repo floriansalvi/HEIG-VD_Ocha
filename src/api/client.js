@@ -1,17 +1,17 @@
 // src/api/client.js
-import axios from 'axios';
+import axios from "axios";
 
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'https://BACKEND-RENDER.URL/api', // Remplace par l'URL de ton backend
+const client = axios.create({
+  // Important: ici on met /api/v1 pour que tes appels soient "/auth", "/orders", etc.
+  baseURL: import.meta.env.VITE_API_URL || "https://heig-vd-ocha-api.onrender.com/api/v1",
+  headers: { "Content-Type": "application/json" },
 });
 
-// Ajout automatique du token si présent
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('authToken');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
+client.interceptors.request.use((config) => {
+  // ✅ même clé partout
+  const token = localStorage.getItem("auth_token");
+  if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
-export default api;
+export default client;

@@ -12,17 +12,9 @@
 
         <form class="auth-form" @submit.prevent="onSubmit">
           <div>
-            <div class="auth-field-label">
-              <span>email</span>
-            </div>
+            <div class="auth-field-label"><span>email</span></div>
             <div class="auth-input-line">
-              <input
-                v-model.trim="email"
-                type="email"
-                autocomplete="email"
-                placeholder="you@matcha.ch"
-                required
-              />
+              <input v-model.trim="email" type="email" autocomplete="email" placeholder="you@matcha.ch" required />
             </div>
           </div>
 
@@ -32,13 +24,7 @@
               <a href="#" class="auth-forgot" @click.prevent>Forgot ?</a>
             </div>
             <div class="auth-input-line">
-              <input
-                v-model="password"
-                type="password"
-                autocomplete="current-password"
-                placeholder="••••••••"
-                required
-              />
+              <input v-model="password" type="password" autocomplete="current-password" placeholder="••••••••" required />
             </div>
           </div>
 
@@ -51,8 +37,7 @@
         </form>
 
         <p class="auth-bottom">
-          new here?
-          <RouterLink to="/register">Sign up</RouterLink>
+          new here? <RouterLink to="/register">Sign up</RouterLink>
         </p>
       </div>
     </div>
@@ -71,26 +56,17 @@ const auth = useAuthStore();
 
 const email = ref("");
 const password = ref("");
-const error = ref("");
 
+const error = computed(() => auth.error);
 const loading = computed(() => auth.loading);
 
 const onSubmit = async () => {
-  error.value = "";
-
-  if (!email.value || !password.value) {
-    error.value = "Email et mot de passe requis.";
-    return;
-  }
-
   try {
-    // 👉 plus tard : await auth.login({ email, password })
-    auth.setToken("fake-token"); // token backend plus tard
-
+    await auth.login({ email: email.value, password: password.value });
     const redirect = route.query.redirect;
     router.replace(typeof redirect === "string" ? redirect : "/");
   } catch {
-    error.value = "Login failed.";
+    // auth.error déjà rempli
   }
 };
 </script>
