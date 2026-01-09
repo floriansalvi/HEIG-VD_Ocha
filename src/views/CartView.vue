@@ -1,3 +1,4 @@
+<!-- src/views/CartView.vue -->
 <template>
   <div class="cart-page">
     <!-- HEADER -->
@@ -22,8 +23,8 @@
           </div>
         </div>
 
-        <!-- total en haut à droite -->
-        <p class="ongoing-total">{{ formatCHF(ongoingTotal) }} CHF</p>
+        <!-- ✅ total recalculé depuis les items (quantités incluses) -->
+        <p class="ongoing-total">{{ formatCHF(ongoingComputedTotal) }} CHF</p>
       </div>
 
       <div class="ongoing-meta">
@@ -42,13 +43,14 @@
           {{ ongoingSummary }}
         </p>
 
-        <!-- prix en bas à droite (comme demandé) -->
-        <p class="ongoing-bottom-price">{{ formatCHF(ongoingTotal) }} CHF</p>
+        <!-- ✅ en bas à droite: total recalculé (pas le prix d’un item) -->
+        <p class="ongoing-bottom-price">{{ formatCHF(ongoingComputedTotal) }} CHF</p>
       </div>
     </section>
 
     <!-- ORDERS LOADING/ERROR -->
     <p v-if="ordersLoading" class="hint">Loading your orders…</p>
+    <p v-else-if="!ordersLoading && !ongoingOrder" class="hint">No orders in progress</p>
     <p v-if="ordersError" class="error">{{ ordersError }}</p>
 
     <!-- CART LIST (local) -->
@@ -135,18 +137,18 @@
     />
 
     <TimeSelectOverlay
-  v-if="showTimeOverlay"
-  :times="availableTimes"
-  :selected-time="selectedTime"
-  :store-selected="!!selectedStore"
-  @close="showTimeOverlay = false"
-  @select="handleTimeSelected"
-/>
+      v-if="showTimeOverlay"
+      :times="availableTimes"
+      :selected-time="selectedTime"
+      :store-selected="!!selectedStore"
+      @close="showTimeOverlay = false"
+      @select="handleTimeSelected"
+    />
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from "vue";
+import { ref, computed, onMounted, watch, onActivated } from "vue";
 import { useRouter } from "vue-router";
 import api from "@/services/api";
 import { useCartStore } from "@/stores/cart";
@@ -223,7 +225,9 @@ async function loadStores() {
   storesLoading.value = true;
   storesError.value = "";
   try {
-    const { data } = await api.get("/stores", { params: { active: "true", page: 1, limit: 50 } });
+    const { data } = await api.get("/stores", {
+      params: { active: "true", page: 1, limit: 50 },
+    });
     stores.value = Array.isArray(data?.stores) ? data.stores : [];
   } catch (e) {
     storesError.value = e?.response?.data?.message || "Failed to load stores";
@@ -245,7 +249,7 @@ async function loadMyOrders() {
 
   ordersLoading.value = true;
   try {
-    // ✅ VRAIE ROUTE d’après ton code serveur: /api/v1/users/me/orders
+    // ✅ chez toi ça marche: /api/v1/users/orders (sans "me")
     const { data } = await api.get("/users/orders", { params: { page: 1, limit: 10 } });
     myOrders.value = Array.isArray(data?.orders) ? data.orders : [];
   } catch (e) {
@@ -276,15 +280,8 @@ const ongoingShopLabel = computed(() => {
   return city ? `${s.name} — ${city}` : s.name;
 });
 
-const ongoingTotal = computed(() => {
-  const o = ongoingOrder.value;
-  if (!o) return 0;
-  const t = Number(o.total_price_chf);
-  return Number.isFinite(t) ? t : 0;
-});
-
-/* ---------- order items -> résumé ---------- */
-const ongoingItems = ref([]);
+/* ---------- order items (DB) -> résumé + total recalculé ---------- */
+const ongoingItems = ref([]); // UI items: { name, quantity, unitPrice }
 
 async function loadOngoingItems() {
   ongoingItems.value = [];
@@ -293,34 +290,49 @@ async function loadOngoingItems() {
 
   try {
     const { data } = await api.get(`/orders/${id}/items`);
-    ongoingItems.value = Array.isArray(data?.items) ? data.items : [];
+    const raw = Array.isArray(data?.items) ? data.items : [];
+
+    ongoingItems.value = raw.map((it, idx) => ({
+      _key: it?._id || String(idx),
+      name: it?.product_name || it?.product_id?.name || "Product",
+      quantity: Number(it?.quantity) || 1,
+      unitPrice: Number(it?.final_price_chf) || 0, // prix unitaire
+    }));
   } catch (e) {
     console.error("Error loading ongoing items:", e);
     ongoingItems.value = [];
   }
 }
 
+const ongoingComputedTotal = computed(() => {
+  const items = Array.isArray(ongoingItems.value) ? ongoingItems.value : [];
+  return items.reduce((sum, it) => {
+    const q = Number(it.quantity) || 1;
+    const p = Number(it.unitPrice) || 0;
+    return sum + p * q;
+  }, 0);
+});
+
 const ongoingSummary = computed(() => {
   const items = Array.isArray(ongoingItems.value) ? ongoingItems.value : [];
   if (!items.length) return "—";
-  const itemNames = items
-    .slice(0, 3)
-    .map((it) => {
-      const name = it?.product_name || it?.name || "Product";
-      const qty = it?.quantity || 1;
-      return qty > 1 ? `${name} (×${qty})` : name;
-    })
-    .join(", ");
-  
-  if (items.length > 3) {
-    return `${itemNames}, and ${items.length - 3} more`;
+
+  // regroupe par nom pour afficher xN proprement
+  const grouped = new Map();
+  for (const it of items) {
+    const name = it.name || "Product";
+    grouped.set(name, (grouped.get(name) || 0) + (Number(it.quantity) || 1));
   }
-  return itemNames;
+
+  const parts = Array.from(grouped.entries())
+    .slice(0, 3)
+    .map(([name, qty]) => (qty > 1 ? `${name} (×${qty})` : name));
+
+  if (grouped.size > 3) return `${parts.join(", ")}, and ${grouped.size - 3} more`;
+  return parts.join(", ");
 });
 
-watch(ongoingOrder, () => {
-  loadOngoingItems();
-}, { immediate: true });
+watch(ongoingOrder, () => loadOngoingItems(), { immediate: true });
 
 /* ---------- choose store/time (opening_hours) ---------- */
 const selectedStore = ref(null);
@@ -421,9 +433,20 @@ function goToOrderSummary() {
   });
 }
 
+/* ---------- lifecycle ---------- */
+async function refreshOrdersLight() {
+  // refresh léger au retour sur l’onglet Order (si page keep-alive)
+  await loadMyOrders();
+}
+
 onMounted(async () => {
   await loadStores();
   await loadMyOrders();
+});
+
+// si tu utilises <keep-alive>, ça se déclenche au retour sur l’onglet
+onActivated(() => {
+  refreshOrdersLight();
 });
 </script>
 
