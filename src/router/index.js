@@ -11,6 +11,8 @@ import ProductDetailView from "@/views/ProductDetailView.vue";
 import CartView from "@/views/CartView.vue";
 import OrderSummaryView from "@/views/OrderSummaryView.vue";
 import AccountView from "@/views/AccountView.vue";
+import AllOrdersView from "@/views/AllOrdersView.vue";
+
 
 const router = createRouter({
   history: createWebHistory(),
@@ -26,7 +28,12 @@ const router = createRouter({
     { path: "/cart", name: "cart", component: CartView, meta: { requiresAuth: true } },
     { path: "/order-summary", name: "order-summary", component: OrderSummaryView, meta: { requiresAuth: true } },
     { path: "/account", name: "account", component: AccountView, meta: { requiresAuth: true } },
-
+{
+  path: "/account/orders",
+  name: "account-orders",
+  component: AllOrdersView,
+  meta: { requiresAuth: true },
+},
     // fallback
     { path: "/:pathMatch(.*)*", redirect: "/login" },
   ],

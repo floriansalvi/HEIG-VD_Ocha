@@ -12,46 +12,71 @@
     <p v-if="storesLoading" class="hint">Loading stores…</p>
     <p v-if="storesError" class="error">{{ storesError }}</p>
 
-    <!-- ONGOING ORDER -->
-    <section v-if="ongoingOrder" class="ongoing-card">
-      <div class="ongoing-top">
-        <div class="ongoing-title-wrap">
-          <p class="ongoing-title">Ongoing order</p>
-          <div class="ongoing-status">
-            <span class="ongoing-dot"></span>
-            <span class="ongoing-status-text">{{ ongoingStatusLabel }}</span>
+    <!-- ORDERS LOADING/ERROR -->
+    <p v-if="ordersLoading" class="hint">Loading your orders…</p>
+    <p v-else-if="!ordersLoading && activeOrders.length === 0" class="hint">
+      No orders in progress
+    </p>
+    <p v-if="ordersError" class="error">{{ ordersError }}</p>
+
+    <!-- ✅ ALL ONGOING ORDERS (en préparation + prête) -->
+    <section v-if="activeOrders.length" class="ongoing-list">
+      <article
+        v-for="order in activeOrders"
+        :key="order._id"
+        class="ongoing-card"
+      >
+        <div class="ongoing-top">
+          <div class="ongoing-title-wrap">
+            <p class="ongoing-title">Ongoing order</p>
+
+            <div class="ongoing-status">
+              <span
+                class="ongoing-dot"
+                :class="{
+                  'ongoing-dot--ready': statusLower(order.status) === 'prête'
+                }"
+              ></span>
+
+              <span class="ongoing-status-text">
+                {{ order.status || "en préparation" }}
+              </span>
+            </div>
+          </div>
+
+          <!-- total (calculé items*qty si dispo, sinon fallback total_price_chf) -->
+          <p class="ongoing-total">
+            {{ formatCHF(orderComputedTotal(order)) }} CHF
+          </p>
+        </div>
+
+        <div class="ongoing-meta">
+          <div class="ongoing-meta-row">
+            <span class="ongoing-ico">📍</span>
+            <span class="ongoing-meta-text">
+              {{ shopLabel(order) }}
+            </span>
+          </div>
+          <div class="ongoing-meta-row">
+            <span class="ongoing-ico">⏰</span>
+            <span class="ongoing-meta-text">
+              Pick up at {{ pickupLabel(order) }}
+            </span>
           </div>
         </div>
 
-        <!-- ✅ total recalculé depuis les items (quantités incluses) -->
-        <p class="ongoing-total">{{ formatCHF(ongoingComputedTotal) }} CHF</p>
-      </div>
+        <div class="ongoing-bottom">
+          <p class="ongoing-summary">
+            {{ orderSummary(order) }}
+          </p>
 
-      <div class="ongoing-meta">
-        <div class="ongoing-meta-row">
-          <span class="ongoing-ico">📍</span>
-          <span class="ongoing-meta-text">{{ ongoingShopLabel }}</span>
+          <!-- en bas à droite: TOTAL -->
+          <p class="ongoing-bottom-price">
+            {{ formatCHF(orderComputedTotal(order)) }} CHF
+          </p>
         </div>
-        <div class="ongoing-meta-row">
-          <span class="ongoing-ico">⏰</span>
-          <span class="ongoing-meta-text">Pick up at {{ ongoingPickupLabel }}</span>
-        </div>
-      </div>
-
-      <div class="ongoing-bottom">
-        <p class="ongoing-summary">
-          {{ ongoingSummary }}
-        </p>
-
-        <!-- ✅ en bas à droite: total recalculé (pas le prix d’un item) -->
-        <p class="ongoing-bottom-price">{{ formatCHF(ongoingComputedTotal) }} CHF</p>
-      </div>
+      </article>
     </section>
-
-    <!-- ORDERS LOADING/ERROR -->
-    <p v-if="ordersLoading" class="hint">Loading your orders…</p>
-    <p v-else-if="!ordersLoading && !ongoingOrder" class="hint">No orders in progress</p>
-    <p v-if="ordersError" class="error">{{ ordersError }}</p>
 
     <!-- CART LIST (local) -->
     <section class="cart-list">
@@ -176,6 +201,10 @@ function toHHMM(dateLike) {
   return `${hh}:${mm}`;
 }
 
+function statusLower(s) {
+  return String(s || "").toLowerCase().trim();
+}
+
 function minutesOf(hhmm) {
   const [h, m] = String(hhmm || "").split(":").map(Number);
   if (!Number.isFinite(h) || !Number.isFinite(m)) return null;
@@ -241,6 +270,10 @@ const ordersLoading = ref(false);
 const ordersError = ref("");
 const myOrders = ref([]);
 
+// cache items par orderId pour pas spammer l’API
+// orderItemsById[orderId] = [{ name, quantity, unitPrice }]
+const orderItemsById = ref({});
+
 async function loadMyOrders() {
   ordersError.value = "";
   myOrders.value = [];
@@ -249,8 +282,8 @@ async function loadMyOrders() {
 
   ordersLoading.value = true;
   try {
-    // ✅ chez toi ça marche: /api/v1/users/orders (sans "me")
-    const { data } = await api.get("/users/orders", { params: { page: 1, limit: 10 } });
+    // ✅ endpoint OK chez toi
+    const { data } = await api.get("/users/orders", { params: { page: 1, limit: 20 } });
     myOrders.value = Array.isArray(data?.orders) ? data.orders : [];
   } catch (e) {
     console.error("Error loading orders:", e);
@@ -260,64 +293,84 @@ async function loadMyOrders() {
   }
 }
 
-const ongoingOrder = computed(() => {
+// ✅ commandes à afficher = tout sauf "récupérée"
+const activeOrders = computed(() => {
   const list = Array.isArray(myOrders.value) ? myOrders.value : [];
-  // status enum: ["en préparation", "prête", "récupérée"]
-  return list.find((o) => String(o?.status || "").toLowerCase() !== "récupérée") || null;
+  return list.filter((o) => statusLower(o?.status) !== "récupérée");
 });
 
-const ongoingStatusLabel = computed(() => ongoingOrder.value?.status || "en préparation");
-
-const ongoingPickupLabel = computed(() => {
-  const pickup = ongoingOrder.value?.pickup;
-  return pickup ? toHHMM(pickup) : "—";
-});
-
-const ongoingShopLabel = computed(() => {
-  const s = ongoingOrder.value?.store_id; // populate("store_id") côté backend
-  if (!s) return "—";
-  const city = s?.address?.city;
-  return city ? `${s.name} — ${city}` : s.name;
-});
-
-/* ---------- order items (DB) -> résumé + total recalculé ---------- */
-const ongoingItems = ref([]); // UI items: { name, quantity, unitPrice }
-
-async function loadOngoingItems() {
-  ongoingItems.value = [];
-  const id = ongoingOrder.value?._id;
-  if (!id) return;
+// charge les items pour chaque commande active (si pas déjà en cache)
+async function ensureOrderItemsLoaded(orderId) {
+  if (!orderId) return;
+  if (orderItemsById.value[orderId]) return;
 
   try {
-    const { data } = await api.get(`/orders/${id}/items`);
+    const { data } = await api.get(`/orders/${orderId}/items`);
     const raw = Array.isArray(data?.items) ? data.items : [];
 
-    ongoingItems.value = raw.map((it, idx) => ({
-      _key: it?._id || String(idx),
-      name: it?.product_name || it?.product_id?.name || "Product",
-      quantity: Number(it?.quantity) || 1,
-      unitPrice: Number(it?.final_price_chf) || 0, // prix unitaire
-    }));
+    orderItemsById.value = {
+      ...orderItemsById.value,
+      [orderId]: raw.map((it, idx) => ({
+        _key: it?._id || String(idx),
+        name: it?.product_name || it?.product_id?.name || "Product",
+        quantity: Number(it?.quantity) || 1,
+        unitPrice: Number(it?.final_price_chf) || 0, // prix unitaire
+      })),
+    };
   } catch (e) {
-    console.error("Error loading ongoing items:", e);
-    ongoingItems.value = [];
+    console.error("Error loading items for order", orderId, e);
+    // on met un tableau vide pour éviter retry infini
+    orderItemsById.value = { ...orderItemsById.value, [orderId]: [] };
   }
 }
 
-const ongoingComputedTotal = computed(() => {
-  const items = Array.isArray(ongoingItems.value) ? ongoingItems.value : [];
-  return items.reduce((sum, it) => {
-    const q = Number(it.quantity) || 1;
-    const p = Number(it.unitPrice) || 0;
-    return sum + p * q;
-  }, 0);
-});
+// à chaque refresh d’orders, on charge les items des commandes actives
+watch(
+  activeOrders,
+  (orders) => {
+    for (const o of orders) ensureOrderItemsLoaded(o?._id);
+  },
+  { immediate: true }
+);
 
-const ongoingSummary = computed(() => {
-  const items = Array.isArray(ongoingItems.value) ? ongoingItems.value : [];
+// labels helpers
+function pickupLabel(order) {
+  return order?.pickup ? toHHMM(order.pickup) : "—";
+}
+
+function shopLabel(order) {
+  const s = order?.store_id; // populate côté backend
+  if (!s) return "—";
+  const city = s?.address?.city;
+  return city ? `${s.name} — ${city}` : s.name;
+}
+
+function orderItems(order) {
+  const id = order?._id;
+  if (!id) return [];
+  return Array.isArray(orderItemsById.value[id]) ? orderItemsById.value[id] : [];
+}
+
+// total = sum(unitPrice * quantity)
+// fallback = total_price_chf si items pas encore chargés
+function orderComputedTotal(order) {
+  const items = orderItems(order);
+  if (items.length) {
+    return items.reduce((sum, it) => {
+      const q = Number(it.quantity) || 1;
+      const p = Number(it.unitPrice) || 0;
+      return sum + p * q;
+    }, 0);
+  }
+  const fallback = Number(order?.total_price_chf);
+  return Number.isFinite(fallback) ? fallback : 0;
+}
+
+function orderSummary(order) {
+  const items = orderItems(order);
   if (!items.length) return "—";
 
-  // regroupe par nom pour afficher xN proprement
+  // regroupe par nom
   const grouped = new Map();
   for (const it of items) {
     const name = it.name || "Product";
@@ -330,9 +383,7 @@ const ongoingSummary = computed(() => {
 
   if (grouped.size > 3) return `${parts.join(", ")}, and ${grouped.size - 3} more`;
   return parts.join(", ");
-});
-
-watch(ongoingOrder, () => loadOngoingItems(), { immediate: true });
+}
 
 /* ---------- choose store/time (opening_hours) ---------- */
 const selectedStore = ref(null);
@@ -435,8 +486,8 @@ function goToOrderSummary() {
 
 /* ---------- lifecycle ---------- */
 async function refreshOrdersLight() {
-  // refresh léger au retour sur l’onglet Order (si page keep-alive)
   await loadMyOrders();
+  // note: les items des commandes actives se chargeront via le watch(activeOrders)
 }
 
 onMounted(async () => {
@@ -444,7 +495,7 @@ onMounted(async () => {
   await loadMyOrders();
 });
 
-// si tu utilises <keep-alive>, ça se déclenche au retour sur l’onglet
+// si ton onglet Order est dans <keep-alive>, ça refresh au retour
 onActivated(() => {
   refreshOrdersLight();
 });
@@ -460,6 +511,12 @@ onActivated(() => {
   margin: 0 16px 10px;
   font-size: 12px;
   color: #b00020;
+}
+
+/* ✅ list container (light) */
+.ongoing-list {
+  margin: 0;
+  padding: 0;
 }
 
 /* ongoing */
@@ -493,7 +550,10 @@ onActivated(() => {
   width: 8px;
   height: 8px;
   border-radius: 999px;
-  background: #5f8f3e;
+  background: #5f8f3e; /* en préparation */
+}
+.ongoing-dot--ready {
+  background: #f0b429; /* prête */
 }
 .ongoing-total {
   margin: 0;

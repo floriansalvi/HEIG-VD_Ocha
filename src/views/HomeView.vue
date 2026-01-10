@@ -5,13 +5,10 @@
     <section class="home-hero">
       <div class="home-hero-bg"></div>
       <div class="home-hero-gradient"></div>
-      <!-- ✅ dark overlay between bg and logo -->
       <div class="home-hero-dark"></div>
 
-      <!-- ✅ centered logo (doesn't move with CTA) -->
       <img class="home-hero-logo-img" :src="logoUrl" alt="Ocha" draggable="false" />
 
-      <!-- CTA pinned at bottom -->
       <div class="home-hero-content">
         <button class="home-hero-cta" type="button" @click="goToUsualOrder">
           <span>Purchase my usual order</span>
@@ -88,7 +85,7 @@
       </div>
     </section>
 
-    <!-- 2 CUPS LEFT (unchanged mock) -->
+    <!-- 2 CUPS LEFT (mock) -->
     <section class="section home-section">
       <div class="stamps-card">
         <p class="stamps-title">2 cups left</p>
@@ -105,24 +102,32 @@
       </div>
     </section>
 
-    <!-- MAP -->
+    <!-- MAP (✅ uses your existing OchaMapStore) -->
     <section class="section home-section">
       <h2 class="home-section-title">Where to find us</h2>
 
+      <p v-if="storesLoading" class="hint">Loading stores…</p>
+      <p v-else-if="storesError" class="error">{{ storesError }}</p>
+
       <div class="map-card">
-        <div ref="mapEl" class="home-map"></div>
+        <OchaMapStore
+          :center="mapCenter"
+          :markers="mapMarkers"
+          :fit-to-markers="true"
+          :zoom="13"
+        />
       </div>
     </section>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
-import L from "leaflet";
 import api from "@/services/api";
 
 import logoUrl from "@/assets/logo-ocha.png";
+import OchaMapStore from "@/components/ui/OchaMap.vue"; // ✅ adapte le path si besoin
 
 const router = useRouter();
 
@@ -134,7 +139,6 @@ function formatCHF(n) {
 }
 
 function pickImageUrl(p) {
-  // essaye plusieurs conventions possibles
   return (
     p?.imageUrl ||
     p?.image_url ||
@@ -155,7 +159,7 @@ function shuffle(arr) {
   return a;
 }
 
-/* ---------- Today's selection (from DB) ---------- */
+/* ---------- Today's selection (DB) ---------- */
 const todaysSelection = ref([]);
 const selectionLoading = ref(false);
 const selectionError = ref("");
@@ -166,7 +170,6 @@ async function loadTodaysSelection() {
   todaysSelection.value = [];
 
   try {
-    // On récupère une liste de produits depuis l'API
     const { data } = await api.get("/products", { params: { page: 1, limit: 100 } });
 
     const products = Array.isArray(data?.products)
@@ -175,12 +178,10 @@ async function loadTodaysSelection() {
       ? data
       : [];
 
-    const picked = shuffle(products).slice(0, 3).map((p) => ({
+    todaysSelection.value = shuffle(products).slice(0, 3).map((p) => ({
       ...p,
       _image: pickImageUrl(p),
     }));
-
-    todaysSelection.value = picked;
   } catch (e) {
     selectionError.value = e?.response?.data?.message || "Failed to load today's selection";
   } finally {
@@ -194,66 +195,75 @@ function onImgError(drink) {
 
 /* ---------- navigation ---------- */
 function goToAllDrinks() {
-  // adapte si ton route name est différent
   router.push({ name: "drinks" }).catch(() => router.push("/drinks"));
 }
 
 function goToProduct(drink) {
   const id = drink?._id || drink?.id;
   if (!id) return;
-  // adapte si ton route name est différent
   router.push({ name: "product-detail", params: { id: String(id) } }).catch(() => {
     router.push(`/products/${id}`);
   });
 }
 
 function goToUsualOrder() {
-  // à adapter plus tard (ex: page account/usual order)
   router.push({ name: "account" }).catch(() => router.push("/account"));
 }
 
-/* ---------- MAP (unchanged) ---------- */
-const shops = [
-  { id: "lausanne", name: "Ocha Matcha", city: "Lausanne", lat: 46.5197, lng: 6.6323 },
-  { id: "renens", name: "Ocha Matcha", city: "Renens", lat: 46.5393, lng: 6.588 },
-];
+/* ---------- STORES MAP (DB) ---------- */
+const stores = ref([]);
+const storesLoading = ref(false);
+const storesError = ref("");
 
-const mapEl = ref(null);
-let mapInstance = null;
+function getLat(store) {
+  return store?.location?.lat ?? store?.lat ?? null;
+}
+function getLng(store) {
+  return store?.location?.lng ?? store?.lng ?? null;
+}
+
+const mapCenter = ref({ lat: 46.5197, lng: 6.6323 }); // fallback Lausanne
+
+const mapMarkers = computed(() => {
+  const list = Array.isArray(stores.value) ? stores.value : [];
+  return list
+    .map((s) => ({
+      id: s?._id,
+      type: "store",
+      lat: getLat(s),
+      lng: getLng(s),
+    }))
+    .filter((m) => Number.isFinite(m.lat) && Number.isFinite(m.lng));
+});
+
+async function loadStoresForMap() {
+  storesLoading.value = true;
+  storesError.value = "";
+  stores.value = [];
+
+  try {
+    const { data } = await api.get("/stores", { params: { active: "true", page: 1, limit: 100 } });
+    stores.value = Array.isArray(data?.stores) ? data.stores : [];
+
+    // centre sur le 1er store valide si dispo
+    const firstValid = stores.value.find((s) => Number.isFinite(getLat(s)) && Number.isFinite(getLng(s)));
+    if (firstValid) {
+      mapCenter.value = { lat: getLat(firstValid), lng: getLng(firstValid) };
+    }
+  } catch (e) {
+    storesError.value = e?.response?.data?.message || "Failed to load stores";
+  } finally {
+    storesLoading.value = false;
+  }
+}
 
 onMounted(async () => {
   await loadTodaysSelection();
-
-  if (!mapEl.value) return;
-
-  mapInstance = L.map(mapEl.value, {
-    zoomControl: false,
-    attributionControl: false,
-  }).setView([46.5197, 6.6323], 12);
-
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 19,
-  }).addTo(mapInstance);
-
-  shops.forEach((s) => {
-    L.marker([s.lat, s.lng]).addTo(mapInstance).bindPopup(`<b>${s.name}</b><br/>${s.city}`);
-  });
-
-  setTimeout(() => {
-    mapInstance && mapInstance.invalidateSize();
-  }, 50);
-});
-
-onBeforeUnmount(() => {
-  if (mapInstance) {
-    mapInstance.remove();
-    mapInstance = null;
-  }
+  await loadStoresForMap();
 });
 </script>
 
 <style scoped>
-/* ✅ Logo centré + overlay sombre */
 .home-hero {
   position: relative;
   overflow: hidden;
@@ -276,20 +286,17 @@ onBeforeUnmount(() => {
   pointer-events: none;
 }
 
-/* logo fixé (ne bouge pas avec le CTA) */
 .home-hero-logo-img {
   position: absolute;
   left: 50%;
   top: 38%;
   transform: translate(-50%, -50%);
   z-index: 4;
-
   width: min(230px, 65%);
   height: auto;
   display: block;
 }
 
-/* CTA en bas */
 .home-hero-content {
   position: relative;
   z-index: 4;
@@ -297,8 +304,7 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  /* augmenter le padding bas pour descendre le CTA */
-  }
+}
 
 /* images cards */
 .fav-card-img {
@@ -309,13 +315,6 @@ onBeforeUnmount(() => {
   height: 100%;
   object-fit: cover;
   display: block;
-}
-
-/* Map: height obligatoire */
-.home-map {
-  height: 180px;
-  width: 100%;
-  border-radius: 16px;
 }
 
 /* messages */

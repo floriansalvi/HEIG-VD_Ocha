@@ -81,9 +81,13 @@
     <section class="account-card">
       <div class="account-card-header">
         <p class="account-section-title">Order history</p>
-        <button type="button" class="account-link-btn" @click="reloadOrders">
-          See all orders
-        </button>
+       <button
+  type="button"
+  class="account-link-btn"
+  @click="$router.push({ name: 'account-orders' })"
+>
+  See all orders
+</button>
       </div>
 
       <p v-if="ordersLoading" class="hint">Loading orders…</p>
@@ -198,7 +202,7 @@ async function loadProfile() {
   profileLoading.value = true;
   profileError.value = "";
   try {
-    const { data } = await api.get("/users");
+    const { data } = await api.get("users");
     profile.value = data?.user || null;
   } catch (e) {
     profileError.value = e?.response?.data?.message || "Failed to load profile";
