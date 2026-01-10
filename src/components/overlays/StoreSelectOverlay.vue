@@ -1,3 +1,4 @@
+<!-- src/components/overlays/StoreSelectOverlay.vue (ou ton fichier actuel) -->
 <template>
   <div class="overlay-backdrop" @click.self="emit('close')">
     <div class="overlay-card">
@@ -42,7 +43,7 @@
                 <span class="overlay-list-city">{{ s.address?.city }}</span>
               </span>
 
-              <span class="overlay-list-distance">
+              <span v-if="s._distanceKm != null" class="overlay-list-distance">
                 {{ formatKm(s._distanceKm) }}
               </span>
             </button>
@@ -92,22 +93,31 @@ const props = defineProps({
 });
 
 const emit = defineEmits(["close", "select"]);
+
 const localSelectedId = ref(props.selectedId);
+watch(
+  () => props.selectedId,
+  (v) => (localSelectedId.value = v)
+);
 
-watch(() => props.selectedId, (v) => (localSelectedId.value = v));
-
+/* ---------- GEOLOC ---------- */
 const geoStatus = ref("idle"); // idle | loading | ok | denied | error
 const userLoc = ref(null); // { lat, lng }
 const geoOk = computed(() => geoStatus.value === "ok" && !!userLoc.value);
 
+/* ---------- COORDS HELPERS (DB: [lng, lat]) ---------- */
 function getLatLngFromStore(store) {
   const coords = store?.location?.coordinates; // [lng, lat]
   if (!Array.isArray(coords) || coords.length < 2) return null;
-  const [lng, lat] = coords;
+
+  const lng = Number(coords[0]);
+  const lat = Number(coords[1]);
+
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
   return { lat, lng };
 }
 
+/* ---------- DISTANCE ---------- */
 function distanceKm(a, b) {
   const R = 6371;
   const toRad = (x) => (x * Math.PI) / 180;
@@ -131,11 +141,13 @@ function formatKm(km) {
   return `${km.toFixed(1)} km`;
 }
 
+/* ---------- STORES SORTED BY DISTANCE ---------- */
 const storesWithDistance = computed(() => {
   const base = Array.isArray(props.stores) ? props.stores : [];
   if (!geoOk.value) return base.map((s) => ({ ...s, _distanceKm: null }));
 
   const me = userLoc.value;
+
   return base
     .map((s) => {
       const ll = getLatLngFromStore(s);
@@ -167,24 +179,13 @@ const otherStores = computed(() => {
 });
 
 const current = computed(
-  () => props.stores.find((s) => s._id === localSelectedId.value) || null
+  () => (Array.isArray(props.stores) ? props.stores : []).find((s) => s._id === localSelectedId.value) || null
 );
 
-/**
- * ✅ 3 shops “fixes” sur la map :
- * - si geoOk -> 3 plus proches (storesWithDistance est déjà trié)
- * - sinon -> 3 premiers
- * - si store sélectionné pas dedans -> on le force dans le top3
- */
+/* ---------- MAP: ✅ TOUS LES STORES (pas seulement 3) ---------- */
 const storesForMap = computed(() => {
-  const base = geoOk.value ? storesWithDistance.value : (props.stores || []);
-  let top = base.filter((s) => getLatLngFromStore(s)).slice(0, 3);
-
-  if (current.value && getLatLngFromStore(current.value)) {
-    const already = top.some((s) => s._id === current.value._id);
-    if (!already) top = [current.value, ...top].slice(0, 3);
-  }
-  return top;
+  const base = Array.isArray(props.stores) ? props.stores : [];
+  return base.filter((s) => !!getLatLngFromStore(s));
 });
 
 const mapCenter = computed(() => {
@@ -201,12 +202,7 @@ const mapMarkers = computed(() => {
   const markers = [];
 
   if (geoOk.value && userLoc.value) {
-    markers.push({
-      id: "me",
-      type: "user",
-      lat: userLoc.value.lat,
-      lng: userLoc.value.lng,
-    });
+    markers.push({ id: "me", type: "user", lat: userLoc.value.lat, lng: userLoc.value.lng });
   }
 
   for (const s of storesForMap.value) {
@@ -218,12 +214,14 @@ const mapMarkers = computed(() => {
   return markers;
 });
 
+/* ---------- ACTIONS ---------- */
 function confirm() {
   if (!current.value) return;
   emit("select", current.value);
   emit("close");
 }
 
+/* ---------- INIT GEOLOC ---------- */
 onMounted(() => {
   if (!navigator.geolocation) {
     geoStatus.value = "error";

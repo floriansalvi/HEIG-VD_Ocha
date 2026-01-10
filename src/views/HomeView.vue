@@ -102,14 +102,14 @@
       </div>
     </section>
 
-    <!-- MAP (✅ uses your existing OchaMapStore) -->
+    <!-- MAP (DB) -->
     <section class="section home-section">
       <h2 class="home-section-title">Where to find us</h2>
 
       <p v-if="storesLoading" class="hint">Loading stores…</p>
       <p v-else-if="storesError" class="error">{{ storesError }}</p>
 
-      <div class="map-card">
+      <div v-else class="map-card">
         <OchaMapStore
           :center="mapCenter"
           :markers="mapMarkers"
@@ -127,7 +127,7 @@ import { useRouter } from "vue-router";
 import api from "@/services/api";
 
 import logoUrl from "@/assets/logo-ocha.png";
-import OchaMapStore from "@/components/ui/OchaMap.vue"; // ✅ adapte le path si besoin
+import OchaMapStore from "@/components/ui/OchaMap.vue"; // ✅ garde ton path réel
 
 const router = useRouter();
 
@@ -195,15 +195,16 @@ function onImgError(drink) {
 
 /* ---------- navigation ---------- */
 function goToAllDrinks() {
-  router.push({ name: "drinks" }).catch(() => router.push("/drinks"));
+  router.push({ name: "products" }).catch(() => router.push("/products"));
 }
 
 function goToProduct(drink) {
   const id = drink?._id || drink?.id;
   if (!id) return;
-  router.push({ name: "product-detail", params: { id: String(id) } }).catch(() => {
-    router.push(`/products/${id}`);
-  });
+
+  router
+    .push({ name: "product-detail", params: { id: String(id) } })
+    .catch(() => router.push(`/products/${id}`));
 }
 
 function goToUsualOrder() {
@@ -215,11 +216,18 @@ const stores = ref([]);
 const storesLoading = ref(false);
 const storesError = ref("");
 
-function getLat(store) {
-  return store?.location?.lat ?? store?.lat ?? null;
+function getLatFromGeoJSON(store) {
+  const coords = store?.location?.coordinates;
+  if (!Array.isArray(coords) || coords.length < 2) return null;
+  const lat = Number(coords[1]); // ✅ GeoJSON: [lng, lat]
+  return Number.isFinite(lat) ? lat : null;
 }
-function getLng(store) {
-  return store?.location?.lng ?? store?.lng ?? null;
+
+function getLngFromGeoJSON(store) {
+  const coords = store?.location?.coordinates;
+  if (!Array.isArray(coords) || coords.length < 2) return null;
+  const lng = Number(coords[0]);
+  return Number.isFinite(lng) ? lng : null;
 }
 
 const mapCenter = ref({ lat: 46.5197, lng: 6.6323 }); // fallback Lausanne
@@ -227,13 +235,19 @@ const mapCenter = ref({ lat: 46.5197, lng: 6.6323 }); // fallback Lausanne
 const mapMarkers = computed(() => {
   const list = Array.isArray(stores.value) ? stores.value : [];
   return list
-    .map((s) => ({
-      id: s?._id,
-      type: "store",
-      lat: getLat(s),
-      lng: getLng(s),
-    }))
-    .filter((m) => Number.isFinite(m.lat) && Number.isFinite(m.lng));
+    .map((s) => {
+      const lat = getLatFromGeoJSON(s);
+      const lng = getLngFromGeoJSON(s);
+      if (lat == null || lng == null) return null;
+
+      return {
+        id: s?._id,
+        type: "store",
+        lat,
+        lng,
+      };
+    })
+    .filter(Boolean);
 });
 
 async function loadStoresForMap() {
@@ -242,13 +256,19 @@ async function loadStoresForMap() {
   stores.value = [];
 
   try {
-    const { data } = await api.get("/stores", { params: { active: "true", page: 1, limit: 100 } });
+    const { data } = await api.get("/stores", {
+      params: { active: "true", page: 1, limit: 200 },
+    });
+
     stores.value = Array.isArray(data?.stores) ? data.stores : [];
 
-    // centre sur le 1er store valide si dispo
-    const firstValid = stores.value.find((s) => Number.isFinite(getLat(s)) && Number.isFinite(getLng(s)));
-    if (firstValid) {
-      mapCenter.value = { lat: getLat(firstValid), lng: getLng(firstValid) };
+    // centre sur 1er store valide
+    const first = stores.value.find((s) => getLatFromGeoJSON(s) != null && getLngFromGeoJSON(s) != null);
+    if (first) {
+      mapCenter.value = {
+        lat: getLatFromGeoJSON(first),
+        lng: getLngFromGeoJSON(first),
+      };
     }
   } catch (e) {
     storesError.value = e?.response?.data?.message || "Failed to load stores";
