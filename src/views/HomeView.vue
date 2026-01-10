@@ -21,6 +21,7 @@
     <section class="section home-section">
       <div class="section-header">
         <h2>Today's selection</h2>
+        <!-- ✅ envoie vers ta page products (à adapter si ton route name diffère) -->
         <button class="link-btn" type="button" @click="goToAllDrinks">See more</button>
       </div>
 
@@ -51,7 +52,7 @@
           <div class="fav-card-body">
             <p class="fav-card-name">{{ drink.name }}</p>
             <p class="fav-card-size">
-              {{ formatCHF(drink.basePriceCHF ?? drink.base_price_chf ?? drink.price_chf) }} CHF
+              {{ formatCHF(drink.basePriceCHF ?? drink.base_price_chf ?? drink.price_chf ?? drink.base_price) }} CHF
             </p>
           </div>
 
@@ -102,7 +103,7 @@
       </div>
     </section>
 
-    <!-- MAP (DB) -->
+    <!-- MAP (DB + pins + tooltip infos) -->
     <section class="section home-section">
       <h2 class="home-section-title">Where to find us</h2>
 
@@ -127,7 +128,7 @@ import { useRouter } from "vue-router";
 import api from "@/services/api";
 
 import logoUrl from "@/assets/logo-ocha.png";
-import OchaMapStore from "@/components/ui/OchaMap.vue"; // ✅ garde ton path réel
+import OchaMapStore from "@/components/ui/OchaMap.vue"; // ✅ garde TON path réel
 
 const router = useRouter();
 
@@ -170,7 +171,7 @@ async function loadTodaysSelection() {
   todaysSelection.value = [];
 
   try {
-    const { data } = await api.get("/products", { params: { page: 1, limit: 100 } });
+    const { data } = await api.get("/products", { params: { page: 1, limit: 200 } });
 
     const products = Array.isArray(data?.products)
       ? data.products
@@ -195,6 +196,7 @@ function onImgError(drink) {
 
 /* ---------- navigation ---------- */
 function goToAllDrinks() {
+  // ✅ si tu as un route name précis, mets-le ici
   router.push({ name: "products" }).catch(() => router.push("/products"));
 }
 
@@ -216,35 +218,33 @@ const stores = ref([]);
 const storesLoading = ref(false);
 const storesError = ref("");
 
-function getLatFromGeoJSON(store) {
+function getLatLngFromStore(store) {
+  // ✅ GeoJSON: [lng, lat]
   const coords = store?.location?.coordinates;
   if (!Array.isArray(coords) || coords.length < 2) return null;
-  const lat = Number(coords[1]); // ✅ GeoJSON: [lng, lat]
-  return Number.isFinite(lat) ? lat : null;
-}
 
-function getLngFromGeoJSON(store) {
-  const coords = store?.location?.coordinates;
-  if (!Array.isArray(coords) || coords.length < 2) return null;
   const lng = Number(coords[0]);
-  return Number.isFinite(lng) ? lng : null;
+  const lat = Number(coords[1]);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+
+  return { lat, lng };
 }
 
-const mapCenter = ref({ lat: 46.5197, lng: 6.6323 }); // fallback Lausanne
+const mapCenter = ref({ lat: 46.5197, lng: 6.6323 });
 
 const mapMarkers = computed(() => {
-  const list = Array.isArray(stores.value) ? stores.value : [];
-  return list
+  return (stores.value || [])
     .map((s) => {
-      const lat = getLatFromGeoJSON(s);
-      const lng = getLngFromGeoJSON(s);
-      if (lat == null || lng == null) return null;
+      const ll = getLatLngFromStore(s);
+      if (!ll) return null;
 
       return {
-        id: s?._id,
+        id: s._id,
         type: "store",
-        lat,
-        lng,
+        ...ll,
+        // ✅ infos tooltip
+        name: s.name,
+        opening_hours: s.opening_hours,
       };
     })
     .filter(Boolean);
@@ -257,19 +257,15 @@ async function loadStoresForMap() {
 
   try {
     const { data } = await api.get("/stores", {
-      params: { active: "true", page: 1, limit: 200 },
+      params: { active: "true", page: 1, limit: 500 },
     });
 
     stores.value = Array.isArray(data?.stores) ? data.stores : [];
 
-    // centre sur 1er store valide
-    const first = stores.value.find((s) => getLatFromGeoJSON(s) != null && getLngFromGeoJSON(s) != null);
-    if (first) {
-      mapCenter.value = {
-        lat: getLatFromGeoJSON(first),
-        lng: getLngFromGeoJSON(first),
-      };
-    }
+    // centre sur le 1er store valide
+    const first = stores.value.find((s) => !!getLatLngFromStore(s));
+    const ll = first ? getLatLngFromStore(first) : null;
+    if (ll) mapCenter.value = ll;
   } catch (e) {
     storesError.value = e?.response?.data?.message || "Failed to load stores";
   } finally {

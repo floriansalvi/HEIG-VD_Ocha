@@ -1,4 +1,4 @@
-<!-- src/components/overlays/StoreSelectOverlay.vue (ou ton fichier actuel) -->
+<!-- src/components/overlays/StoreSelectOverlay.vue -->
 <template>
   <div class="overlay-backdrop" @click.self="emit('close')">
     <div class="overlay-card">
@@ -23,6 +23,7 @@
           :markers="mapMarkers"
           :selectedStoreId="localSelectedId"
           :fitToMarkers="true"
+          @select-store="(id) => (localSelectedId = id)"
         />
       </div>
 
@@ -95,19 +96,16 @@ const props = defineProps({
 const emit = defineEmits(["close", "select"]);
 
 const localSelectedId = ref(props.selectedId);
-watch(
-  () => props.selectedId,
-  (v) => (localSelectedId.value = v)
-);
+watch(() => props.selectedId, (v) => (localSelectedId.value = v));
 
 /* ---------- GEOLOC ---------- */
 const geoStatus = ref("idle"); // idle | loading | ok | denied | error
 const userLoc = ref(null); // { lat, lng }
 const geoOk = computed(() => geoStatus.value === "ok" && !!userLoc.value);
 
-/* ---------- COORDS HELPERS (DB: [lng, lat]) ---------- */
+/* ---------- COORDS HELPERS (DB GeoJSON: [lng, lat]) ---------- */
 function getLatLngFromStore(store) {
-  const coords = store?.location?.coordinates; // [lng, lat]
+  const coords = store?.location?.coordinates;
   if (!Array.isArray(coords) || coords.length < 2) return null;
 
   const lng = Number(coords[0]);
@@ -147,7 +145,6 @@ const storesWithDistance = computed(() => {
   if (!geoOk.value) return base.map((s) => ({ ...s, _distanceKm: null }));
 
   const me = userLoc.value;
-
   return base
     .map((s) => {
       const ll = getLatLngFromStore(s);
@@ -178,11 +175,12 @@ const otherStores = computed(() => {
   return storesWithDistance.value.filter((s) => !idsAround.has(s._id));
 });
 
-const current = computed(
-  () => (Array.isArray(props.stores) ? props.stores : []).find((s) => s._id === localSelectedId.value) || null
-);
+const current = computed(() => {
+  const list = Array.isArray(props.stores) ? props.stores : [];
+  return list.find((s) => String(s._id) === String(localSelectedId.value)) || null;
+});
 
-/* ---------- MAP: ✅ TOUS LES STORES (pas seulement 3) ---------- */
+/* ---------- MAP: ✅ TOUS LES STORES ---------- */
 const storesForMap = computed(() => {
   const base = Array.isArray(props.stores) ? props.stores : [];
   return base.filter((s) => !!getLatLngFromStore(s));
@@ -208,7 +206,15 @@ const mapMarkers = computed(() => {
   for (const s of storesForMap.value) {
     const ll = getLatLngFromStore(s);
     if (!ll) continue;
-    markers.push({ id: s._id, type: "store", ...ll });
+
+    markers.push({
+      id: s._id,
+      type: "store",
+      ...ll,
+      // ✅ infos tooltip
+      name: s.name,
+      opening_hours: s.opening_hours,
+    });
   }
 
   return markers;
