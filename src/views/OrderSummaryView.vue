@@ -1,16 +1,17 @@
-<!-- src/views/OrderSummaryView.vue -->
 <template>
   <div class="order-page">
+    <!-- Header / back navigation -->
     <header class="order-header">
       <button class="icon-btn" type="button" @click="goBack">←</button>
       <h1 class="order-header-title">Order</h1>
       <span class="order-header-spacer"></span>
     </header>
 
+    <!-- API error banner -->
     <p v-if="error" class="order-error">{{ error }}</p>
 
     <section class="order-card">
-      <!-- TOP ROW -->
+      <!-- Order preview (thumbnail + meta + total) -->
       <div class="order-product-row">
         <div class="order-product-thumb">
           <img
@@ -31,9 +32,11 @@
           </p>
         </div>
 
+        <!-- Total amount: DB total (after creation) or cart total (before creation) -->
         <span class="order-product-price">{{ formatCHF(displayTotal) }} CHF</span>
       </div>
 
+      <!-- Selected store -->
       <div class="order-info-row">
         <div class="order-info-left">
           <span class="order-info-icon">📍</span>
@@ -44,6 +47,7 @@
         </div>
       </div>
 
+      <!-- Selected pickup time -->
       <div class="order-info-row order-info-row--time">
         <div class="order-info-left">
           <span class="order-info-icon">⏰</span>
@@ -54,6 +58,7 @@
         </div>
       </div>
 
+      <!-- Place order action -->
       <button
         class="order-place-btn"
         type="button"
@@ -65,7 +70,7 @@
       </button>
     </section>
 
-    <!-- SUCCESS -->
+    <!-- Success overlay (shown after order creation) -->
     <div v-if="showSuccessOverlay" class="order-success-backdrop">
       <div class="order-success-card">
         <div class="order-success-icon">✅</div>
@@ -93,32 +98,49 @@ const router = useRouter();
 const route = useRoute();
 const cart = useCartStore();
 
+/* =========================
+   UI state
+   ========================= */
 const isPlacing = ref(false);
 const showSuccessOverlay = ref(false);
 const error = ref("");
 
-// ---- DB state (après création) ----
+/* =========================
+   DB state (after creation)
+   ========================= */
 const createdOrderId = ref("");
-const dbItems = ref([]); // items depuis GET /orders/:id/items
-const dbTotal = ref(null); // total_price_chf depuis réponse POST
+const dbItems = ref([]);     // items fetched from GET /orders/:id/items
+const dbTotal = ref(null);   // total_price_chf returned by POST /orders
 
-// Reçus depuis CartView (query)
-const storeId = computed(() => (typeof route.query.storeId === "string" ? route.query.storeId : ""));
-const storeName = computed(() => (typeof route.query.storeName === "string" ? route.query.storeName : ""));
-const pickupHHMM = computed(() => (typeof route.query.time === "string" ? route.query.time : ""));
+/* =========================
+   Data received from CartView (route query)
+   ========================= */
+const storeId = computed(() =>
+  typeof route.query.storeId === "string" ? route.query.storeId : ""
+);
+const storeName = computed(() =>
+  typeof route.query.storeName === "string" ? route.query.storeName : ""
+);
+const pickupHHMM = computed(() =>
+  typeof route.query.time === "string" ? route.query.time : ""
+);
 
 const shopLabel = computed(() => storeName.value || "No shop selected");
 const pickupTimeLabel = computed(() => pickupHHMM.value || "No time selected");
 
-// ---------- helpers ----------
+/* =========================
+   Helpers
+   ========================= */
 function formatCHF(n) {
   const num = Number(n);
   if (!Number.isFinite(num)) return "0.00";
   return num.toFixed(2);
 }
 
-// construit une vraie Date ISO à partir de "HH:MM" (aujourd’hui)
-// -> compatible avec pickup: Date (mongoose)
+/**
+ * Convert an "HH:mm" string into an ISO date for today's date.
+ * Backend expects pickup as a Date (ISO string works fine).
+ */
 function buildPickupISO(hhmm) {
   const [h, m] = String(hhmm || "").split(":").map((x) => Number(x));
   if (!Number.isFinite(h) || !Number.isFinite(m)) return null;
@@ -129,19 +151,27 @@ function buildPickupISO(hhmm) {
   return d.toISOString();
 }
 
-// ---------- cart -> payload ----------
+/* =========================
+   Cart -> payload / validation
+   ========================= */
 const canPlace = computed(() => {
   const items = Array.isArray(cart.items) ? cart.items : [];
   return !!storeId.value && !!pickupHHMM.value && items.length > 0;
 });
 
-// total affiché : DB si dispo, sinon panier
+/**
+ * Display total:
+ * - if DB total exists (after creation), use it
+ * - otherwise show the cart total (before creation)
+ */
 const displayTotal = computed(() => {
   if (Number.isFinite(Number(dbTotal.value))) return Number(dbTotal.value);
   return Number(cart.totalAmount) || 0;
 });
 
-// --------- IMAGE (du panier) ---------
+/* =========================
+   Thumbnail (take the first cart item's image)
+   ========================= */
 const firstCartItem = computed(() => {
   const items = Array.isArray(cart.items) ? cart.items : [];
   return items.length ? items[0] : null;
@@ -163,11 +193,13 @@ function onThumbError() {
   thumbSrc.value = "";
 }
 
-// ---------- META affichée ----------
-// ✅ Avant création : basé sur panier (nom + xqty)
-// ✅ Après création : basé sur DB (product_name + xquantity)
+/* =========================
+   Meta text under "My order"
+   - Prefer DB items (after order is created)
+   - Fallback to cart items (before creation)
+   ========================= */
 const orderMeta = computed(() => {
-  // priorité DB
+  // DB priority (more reliable quantities)
   if (Array.isArray(dbItems.value) && dbItems.value.length) {
     return dbItems.value
       .slice(0, 3)
@@ -179,7 +211,7 @@ const orderMeta = computed(() => {
       .join(", ");
   }
 
-  // fallback panier
+  // Cart fallback
   const items = Array.isArray(cart.items) ? cart.items : [];
   if (!items.length) return "No items";
   return items
@@ -191,23 +223,31 @@ const orderMeta = computed(() => {
     .join(", ");
 });
 
-// ---------- API: load items from DB ----------
+/* =========================
+   API: load items from DB for the created order
+   (non-blocking: UI can still fallback to cart)
+   ========================= */
 async function fetchOrderItems(orderId) {
   try {
     const { data } = await api.get(`/orders/${orderId}/items`);
     dbItems.value = Array.isArray(data?.items) ? data.items : [];
   } catch (e) {
-    // pas bloquant pour l’UI : on garde le fallback panier
+    // Not blocking: keep cart-based meta if it fails
     console.log("LOAD ORDER ITEMS status:", e?.response?.status);
     console.log("LOAD ORDER ITEMS data:", e?.response?.data);
   }
 }
 
-// ---------- actions ----------
+/* =========================
+   Navigation
+   ========================= */
 function goBack() {
   router.back();
 }
 
+/* =========================
+   Place order (POST /orders)
+   ========================= */
 async function placeOrder() {
   if (isPlacing.value || !canPlace.value) return;
 
@@ -221,31 +261,33 @@ async function placeOrder() {
     return;
   }
 
+  // Build payload from cart data (backend expects store_id, pickup and items[])
   const payload = {
     store_id: storeId.value,
-    pickup: pickupISO, // ✅ Date ISO
+    pickup: pickupISO,
     items: (cart.items || []).map((it) => ({
       product_id: it.productId,
       size: it.size,
-      quantity: Number(it.quantity) || 1, // ✅ quantity envoyé
+      quantity: Number(it.quantity) || 1,
     })),
   };
 
   try {
     const { data } = await api.post("/orders", payload);
 
+    // Handle different possible shapes from the backend response
     const orderId = data?.order?._id || data?._id || data?.id;
     if (!orderId) throw new Error("Order created but missing id");
 
     createdOrderId.value = String(orderId);
     dbTotal.value = Number(data?.order?.total_price_chf);
 
-    // ✅ récupère les quantités depuis la DB
+    // Fetch DB items to display accurate quantities/prices if needed
     await fetchOrderItems(createdOrderId.value);
 
     showSuccessOverlay.value = true;
 
-    // optionnel: vider le panier après succès
+    // Clear local cart after success
     if (typeof cart.clear === "function") cart.clear();
   } catch (e) {
     console.log("PLACE ORDER status:", e?.response?.status);
@@ -260,6 +302,9 @@ async function placeOrder() {
   }
 }
 
+/* =========================
+   Close success overlay + go back to cart
+   ========================= */
 function goToCart() {
   showSuccessOverlay.value = false;
   router.push("/cart");
@@ -267,14 +312,14 @@ function goToCart() {
 </script>
 
 <style scoped>
-/* erreurs */
+/* Error message (top of page) */
 .order-error {
   margin: 0 16px 10px;
   font-size: 12px;
   color: #b00020;
 }
 
-/* thumb */
+/* Thumbnail container */
 .order-product-thumb {
   width: 54px;
   height: 54px;
@@ -298,7 +343,7 @@ function goToCart() {
   background: #d4e6b8;
 }
 
-/* success overlay */
+/* Success overlay (covers the phone content only) */
 .order-success-backdrop {
   position: absolute;
   inset: 0;

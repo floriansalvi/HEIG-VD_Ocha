@@ -1,7 +1,8 @@
 /* =========================
-   VARIABLES & RESET
+   DESIGN TOKENS + BASE RESET
    ========================= */
 
+/* Global CSS variables (brand colors + text) */
 :root {
   --ocha-green: #5f8f3e;
   --ocha-green-light: #a7be78;
@@ -10,29 +11,32 @@
   --ocha-muted: #8b8375;
 }
 
+/* Predictable sizing everywhere */
 *,
 *::before,
 *::after {
   box-sizing: border-box;
 }
 
+/* Remove default browser spacing */
 html,
 body {
   margin: 0;
   padding: 0;
 }
 
+/* Base typography + app background */
 body {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   background-color: #ffffff;
   color: var(--ocha-text);
 }
 
 /* =========================
-   PHONE SHELL GLOBAL
+   GLOBAL "PHONE SHELL" LAYOUT
    ========================= */
 
+/* Centers the app in the page like a phone mockup */
 .phone-wrapper {
   min-height: 100vh;
   display: flex;
@@ -41,6 +45,7 @@ body {
   background: #ffffff;
 }
 
+/* Phone container (fixed iPhone-like size with rounded corners) */
 .phone-shell {
   width: 390px;
   max-width: 100%;
@@ -49,32 +54,33 @@ body {
   border-radius: 32px;
   overflow: hidden;
   position: relative;
-  background: #ffffff; /* ✅ intérieur du téléphone blanc */
+  background: #ffffff; /* inside of the phone */
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
 
   display: flex;
   flex-direction: column;
 }
 
-/* contenu scrollable dans le téléphone */
+/* Scrollable content area inside the phone (navigation stays visible) */
 .phone-content {
   flex: 1;
-  padding: 0px;/* place pour la bottom nav */
+  padding: 0px; /* space is managed by the views (bottom nav offset) */
   box-sizing: border-box;
   overflow-y: auto;
 }
 
 /* =========================
-   HOME - STYLE MAQUETTE
+   HOME (mockup styling)
    ========================= */
 
+/* Main home background + bottom space for bottom nav */
 .home {
   min-height: 100%;
-  padding: 0 0 72px; /* pas de marge en haut, place en bas pour la nav */
+  padding: 0 0 72px;
   background: #f5eee4;
 }
 
-/* HERO */
+/* ----- HERO ----- */
 
 .home-hero {
   position: relative;
@@ -84,14 +90,16 @@ body {
   margin-bottom: 16px;
 }
 
+/* Background image layer */
 .home-hero-bg {
   position: absolute;
   inset: 0;
-  background-image: url('./background-login.jpg');
+  background-image: url("./background-login.jpg");
   background-size: cover;
   background-position: center;
 }
 
+/* Gradient overlay to improve readability */
 .home-hero-gradient {
   position: absolute;
   inset: 0;
@@ -103,6 +111,7 @@ body {
   );
 }
 
+/* Content sits above the background layers */
 .home-hero-content {
   position: relative;
   z-index: 1;
@@ -114,6 +123,7 @@ body {
   color: #fff;
 }
 
+/* Logo text (used when not using an image logo) */
 .home-hero-logo {
   position: absolute;
   top: 18px;
@@ -125,6 +135,7 @@ body {
   color: #ffd8f5;
 }
 
+/* Main CTA button in the hero */
 .home-hero-cta {
   align-self: center;
   border: none;
@@ -143,7 +154,7 @@ body {
   font-size: 16px;
 }
 
-/* sections */
+/* ----- SECTIONS ----- */
 
 .home-section {
   padding: 0 12px;
@@ -155,8 +166,9 @@ body {
   font-weight: 600;
 }
 
-/* FAVORITES - cartes horizontales */
+/* ----- HORIZONTAL CARDS (Today's selection) ----- */
 
+/* Horizontal scroll row */
 .cards-row {
   display: flex;
   gap: 12px;
@@ -164,10 +176,12 @@ body {
   padding: 4px 0 12px;
 }
 
+/* Hide scrollbar for a cleaner mobile-like look */
 .cards-row::-webkit-scrollbar {
   display: none;
 }
 
+/* Product card */
 .fav-card {
   min-width: 150px;
   border-radius: 16px;
@@ -178,6 +192,7 @@ body {
   flex-direction: column;
 }
 
+/* Image area of the card */
 .fav-card-img {
   height: 110px;
   background: #d2e0b4;
@@ -199,6 +214,7 @@ body {
   color: #8b8375;
 }
 
+/* Add button pinned at the bottom of the card */
 .fav-card-add {
   border: none;
   border-radius: 999px;
@@ -213,7 +229,7 @@ body {
   cursor: pointer;
 }
 
-/* PROMO LARGE CARDS */
+/* ----- PROMOTIONS ----- */
 
 .promo-large {
   margin-top: 12px;
@@ -224,11 +240,13 @@ body {
   flex-direction: column;
 }
 
+/* Promo image block */
 .promo-large-img {
   height: 110px;
   background: #c48755;
 }
 
+/* Alternate promo theme (cookie card) */
 .promo-large--cookie .promo-large-img {
   background: #c7b58b;
 }
@@ -259,7 +277,7 @@ body {
   cursor: pointer;
 }
 
-/* STAMPS / LOYALTY */
+/* ----- LOYALTY / STAMPS ----- */
 
 .stamps-card {
   margin-top: 12px;
@@ -287,6 +305,7 @@ body {
   gap: 6px;
 }
 
+/* Empty stamp */
 .stamp-dot {
   width: 10px;
   height: 10px;
@@ -295,12 +314,13 @@ body {
   background: transparent;
 }
 
+/* Filled stamp */
 .stamp-dot--filled {
   background: #ffd8f5;
   border-color: #ffd8f5;
 }
 
-/* MAP CARD */
+/* ----- MAP CARD ----- */
 
 .map-card {
   margin-top: 8px;
@@ -319,13 +339,14 @@ body {
 }
 
 /* =========================
-   PRODUCTS LIST / OUR MATCHAS
+   PRODUCTS LIST
    ========================= */
 
+/* White background for grid view + bottom space for nav */
 .products-page {
   min-height: 100%;
-  padding: 16px 12px 72px; /* place en bas pour la bottom nav */
-  background: #ffffff; /* pas de beige derrière la grille */
+  padding: 16px 12px 72px;
+  background: #ffffff;
 }
 
 .products-title {
@@ -335,6 +356,7 @@ body {
   color: #b4aa9a;
 }
 
+/* Container card around the product grid */
 .products-panel {
   background: #ffffff;
   border-radius: 16px;
@@ -349,8 +371,7 @@ body {
   font-weight: 600;
 }
 
-/* onglets iced / warm */
-
+/* Tabs (if used) */
 .products-tabs {
   display: flex;
   justify-content: center;
@@ -373,16 +394,14 @@ body {
   color: #fff;
 }
 
-/* grille 2 colonnes */
-
+/* 2-column grid */
 .products-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
 
-/* carte produit */
-
+/* Product card */
 .product-card {
   position: relative;
   border-radius: 12px;
@@ -455,12 +474,12 @@ body {
 }
 
 /* =========================
-   PRODUCT DETAIL PAGE
+   PRODUCT DETAIL
    ========================= */
 
 .product-page {
   min-height: 100%;
-  padding: 12px 16px 80px; /* place pour la bottom nav */
+  padding: 12px 16px 80px;
   background: #ffffff;
 }
 
@@ -481,20 +500,22 @@ body {
   flex: 1;
 }
 
+/* Product image container */
 .product-hero {
   background: #ffffff;
   border-radius: 24px;
-  padding: 12px;              /* ↓ moins de padding */
+  padding: 12px; /* reduced padding to give more space to the image */
   display: flex;
   align-items: center;
   justify-content: center;
 }
+
 .product-hero-img {
   width: 100%;
   height: 220px;
-  object-fit: contain;   /* ✅ clé ici */
+  object-fit: contain; /* keep full product visible */
   border-radius: 18px;
-  background: #ffffff;   /* fond neutre */
+  background: #ffffff;
 }
 
 .product-hero-img-placeholder {
@@ -508,8 +529,7 @@ body {
   font-size: 14px;
 }
 
-/* qty + price */
-
+/* Quantity + price block */
 .product-qty-block {
   margin-top: 8px;
   display: flex;
@@ -557,8 +577,7 @@ body {
   font-weight: 600;
 }
 
-/* options card */
-
+/* Options card pinned to the bottom part */
 .product-options-card {
   margin-top: 12px;
   border-radius: 24px 24px 0 0;
@@ -620,12 +639,12 @@ body {
 }
 
 /* =========================
-   CART PAGE
+   CART
    ========================= */
 
 .cart-page {
   min-height: 100%;
-  padding: 16px 16px 72px; /* place pour la bottom nav */
+  padding: 16px 16px 72px;
   background: #f5eee4;
 }
 
@@ -646,8 +665,7 @@ body {
   width: 40px;
 }
 
-/* LISTE */
-
+/* Cart list */
 .cart-list {
   margin-bottom: 16px;
 }
@@ -703,8 +721,7 @@ body {
   color: #8b8375;
 }
 
-/* SUMMARY */
-
+/* Summary section */
 .cart-summary {
   margin-top: 8px;
 }
@@ -721,8 +738,7 @@ body {
   font-weight: 600;
 }
 
-/* boutons choose store / time */
-
+/* Store / time selectors */
 .cart-choose-btn {
   width: 100%;
   border-radius: 999px;
@@ -751,8 +767,7 @@ body {
   color: #8b8375;
 }
 
-/* bouton Continue */
-
+/* Continue CTA */
 .cart-place-btn {
   margin-top: 8px;
   width: 100%;
@@ -772,11 +787,12 @@ body {
 }
 
 /* =========================
-   OVERLAYS (store / time)
+   OVERLAYS (Store / Time)
    ========================= */
 
+/* Overlay is absolute so it covers only the phone shell */
 .overlay-backdrop {
-  position: absolute;           /* couvre seulement l’iPhone */
+  position: absolute;
   inset: 0;
   background: rgba(0, 0, 0, 0.35);
   display: flex;
@@ -821,8 +837,7 @@ body {
   cursor: pointer;
 }
 
-/* MAP */
-
+/* Map placeholder styles (used if needed) */
 .overlay-map-placeholder {
   height: 150px;
   border-radius: 14px;
@@ -834,8 +849,7 @@ body {
   color: #6c6254;
 }
 
-/* LISTE COMMUNE (store + time) */
-
+/* Shared list styles */
 .overlay-list {
   list-style: none;
   margin: 0 0 12px;
@@ -869,8 +883,7 @@ body {
   background: #f0f5e2;
 }
 
-/* Bouton principal */
-
+/* Primary CTA inside overlay */
 .overlay-primary-btn {
   width: 100%;
   border-radius: 999px;
@@ -889,12 +902,12 @@ body {
 }
 
 /* =========================
-   ORDER SUMMARY PAGE
+   ORDER SUMMARY
    ========================= */
 
 .order-page {
   min-height: 100%;
-  padding: 16px 16px 72px; /* place pour la bottom nav */
+  padding: 16px 16px 72px;
   background: #f5eee4;
 }
 
@@ -922,8 +935,7 @@ body {
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
 }
 
-/* Ligne produit */
-
+/* Product line */
 .order-product-row {
   display: flex;
   align-items: center;
@@ -962,7 +974,6 @@ body {
 }
 
 /* Info rows */
-
 .order-info-row {
   margin-top: 8px;
   padding-top: 8px;
@@ -996,8 +1007,7 @@ body {
   color: #2f2a24;
 }
 
-/* Map */
-
+/* Map container (Leaflet or placeholder) */
 .order-map-card {
   margin: 10px 0 4px;
   border-radius: 14px;
@@ -1014,8 +1024,7 @@ body {
   color: #6c6254;
 }
 
-/* Bouton place order */
-
+/* Place order CTA */
 .order-place-btn {
   margin-top: 12px;
   width: 100%;
@@ -1033,18 +1042,18 @@ body {
   opacity: 0.6;
   cursor: default;
 }
+
 /* =========================
-   ACCOUNT PAGE
+   ACCOUNT
    ========================= */
 
 .account-page {
   min-height: 100%;
-  padding: 16px 16px 72px; /* place pour la bottom nav */
+  padding: 16px 16px 72px;
   background: #ffffff;
 }
 
-/* header */
-
+/* Account header */
 .account-header {
   display: flex;
   align-items: center;
@@ -1062,8 +1071,7 @@ body {
   flex: 1;
 }
 
-/* cartes génériques */
-
+/* Shared card style */
 .account-card {
   background: #ffffff;
   border-radius: 16px;
@@ -1095,7 +1103,7 @@ body {
   font-weight: 600;
 }
 
-/* petit bouton texte à droite (Infos / See all orders) */
+/* Small text button on the right */
 .account-link-btn {
   border: none;
   background: transparent;
@@ -1105,8 +1113,7 @@ body {
   padding: 0;
 }
 
-/* BARCODE */
-
+/* Barcode card */
 .account-barcode-wrapper {
   border-radius: 18px;
   padding: 14px 16px 10px;
@@ -1121,17 +1128,17 @@ body {
   margin-bottom: 4px;
 }
 
+/* Old fallback barcode stripes (kept for reference) */
 .account-barcode-stripes {
   height: 56px;
   border-radius: 8px;
-  background:
-    repeating-linear-gradient(
-      to right,
-      #222 0,
-      #222 2px,
-      transparent 2px,
-      transparent 4px
-    );
+  background: repeating-linear-gradient(
+    to right,
+    #222 0,
+    #222 2px,
+    transparent 2px,
+    transparent 4px
+  );
 }
 
 .account-barcode-number {
@@ -1143,8 +1150,7 @@ body {
   color: #ffffff;
 }
 
-/* FIDELITY CARD */
-
+/* Fidelity UI block (pure UI / mock) */
 .account-fidelity-card {
   border-radius: 16px;
   overflow: hidden;
@@ -1155,7 +1161,7 @@ body {
 .account-fidelity-bg {
   position: absolute;
   inset: 0;
-  background: url('@/assets/background-login.jpg') center/cover no-repeat;
+  background: url("@/assets/background-login.jpg") center/cover no-repeat;
   filter: blur(0.5px);
   transform: scale(1.02);
 }
@@ -1205,8 +1211,7 @@ body {
   background: #ffd8f5;
 }
 
-/* ORDER HISTORY LIST */
-
+/* Order list in account */
 .account-orders-list {
   list-style: none;
   margin: 0;
@@ -1271,8 +1276,7 @@ body {
   color: #b0a89a;
 }
 
-/* USUAL ORDER */
-
+/* Usual order section (if used) */
 .account-usual-card {
   border-radius: 14px;
   background: #faf6f0;
@@ -1327,8 +1331,8 @@ body {
    ORDER SUCCESS OVERLAY
    ========================= */
 
+/* Keeps same overlay base with a higher z-index for success */
 .order-success-backdrop {
-  /* on réutilise overlay-backdrop + petit ajustement d’opacité si tu veux */
   background: rgba(0, 0, 0, 0.35);
   z-index: 50;
 }
@@ -1336,7 +1340,7 @@ body {
 .order-success-card {
   width: 80%;
   max-width: 300px;
-  background: #e4f4d9; /* vert pâle */
+  background: #e4f4d9;
   border-radius: 22px;
   padding: 18px 16px 16px;
   text-align: center;
@@ -1372,10 +1376,12 @@ body {
   color: #ffffff;
   cursor: pointer;
 }
+
 /* =========================
-   ONGOING ORDER (Cart) - jolie card
+   ONGOING ORDER (Cart)
    ========================= */
 
+/* Ongoing order card container */
 .ongoing-card {
   background: #ffffff;
   border-radius: 18px;
@@ -1461,7 +1467,7 @@ body {
   color: #2f2a24;
 }
 
-/* items */
+/* Ongoing items section */
 .ongoing-items {
   margin-top: 12px;
   background: #fbfaf8;
@@ -1550,63 +1556,164 @@ body {
   font-weight: 800;
 }
 
-/* Leaflet: indispensable */
+/* Leaflet map must have explicit size to render */
 .leaflet-container {
   width: 100%;
   height: 100%;
 }
 
-/* Ton bloc map */
+/* Generic map block container */
 .order-map {
-  height: 140px;         /* adapte */
+  height: 140px;
   border-radius: 16px;
   overflow: hidden;
   background: #e1dfd7;
 }
+
 /* =========================
-   AUTH (login/register)
+   AUTH (login / register)
    ========================= */
-.auth-screen { height: 100%; display:flex; flex-direction:column; background:#fff; }
+
+/* Auth screens are split into a top image and a bottom panel */
+.auth-screen {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+}
+
 .auth-bg {
   position: relative;
   height: 45%;
-  background: url('@/assets/background-login.jpg') center / cover no-repeat;
+  background: url("@/assets/background-login.jpg") center / cover no-repeat;
   border-radius: 32px 32px 0 0;
   overflow: hidden;
 
   display: flex;
-  align-items: center;      /* centre verticalement */
-  justify-content: center;  /* centre horizontalement */
+  align-items: center;
+  justify-content: center;
 }
 
-/* OVERLAY SOMBRE */
+/* Dark overlay to increase contrast with the logo */
 .auth-bg::after {
   content: "";
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.25); /* ← ajuste ici */
+  background: rgba(0, 0, 0, 0.25);
 }
+
+/* Logo is placed above the overlay (z-index) */
 .auth-logo {
   position: relative;
   z-index: 1;
-}.auth-logo img { width:300px; display:block; }
+}
 
-.auth-panel { background:rgba(255,255,255,.96); border-radius:24px 24px 0 0; padding:24px 20px 20px; }
-.auth-title { font-size:20px; font-weight:600; margin:0 0 16px; color:#222; }
+.auth-logo img {
+  width: 300px;
+  display: block;
+}
 
-.auth-tabs { display:inline-flex; background:#e5e0d6; border-radius:999px; padding:4px; margin-bottom:20px; }
-.auth-tab { border:none; background:transparent; border-radius:999px; padding:6px 22px; font-size:13px; cursor:pointer; color:#6e675a; }
-.auth-tab--active { background: var(--ocha-green-light); color:#fff; }
+/* Bottom auth panel */
+.auth-panel {
+  background: rgba(255, 255, 255, 0.96);
+  border-radius: 24px 24px 0 0;
+  padding: 24px 20px 20px;
+}
 
-.auth-form { display:flex; flex-direction:column; gap:18px; }
-.auth-field-label { font-size:13px; margin-bottom:4px; display:flex; justify-content:space-between; color:#3a352b; }
-.auth-forgot { font-size:12px; color:#8c8575; text-decoration:none; }
+.auth-title {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0 0 16px;
+  color: #222;
+}
 
-.auth-input-line { border-bottom:1px solid #bcb3a5; padding:6px 0; }
-.auth-input-line input { border:none; outline:none; width:100%; font-size:14px; padding:4px 0; background:transparent; }
+/* Tabs styling (if used) */
+.auth-tabs {
+  display: inline-flex;
+  background: #e5e0d6;
+  border-radius: 999px;
+  padding: 4px;
+  margin-bottom: 20px;
+}
 
-.auth-primary-btn { margin-top:24px; width:100%; border-radius:999px; border:none; padding:12px 16px; font-size:15px; font-weight:600; background:#000; color:#fff; cursor:pointer; }
-.auth-bottom { margin-top:12px; text-align:center; font-size:13px; color:#8c8575; }
-.auth-bottom a { color:#8c8575; text-decoration:underline; }
+.auth-tab {
+  border: none;
+  background: transparent;
+  border-radius: 999px;
+  padding: 6px 22px;
+  font-size: 13px;
+  cursor: pointer;
+  color: #6e675a;
+}
 
-.auth-error { color:#b3261e; font-size:12px; }
+.auth-tab--active {
+  background: var(--ocha-green-light);
+  color: #fff;
+}
+
+/* Form layout */
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.auth-field-label {
+  font-size: 13px;
+  margin-bottom: 4px;
+  display: flex;
+  justify-content: space-between;
+  color: #3a352b;
+}
+
+.auth-forgot {
+  font-size: 12px;
+  color: #8c8575;
+  text-decoration: none;
+}
+
+.auth-input-line {
+  border-bottom: 1px solid #bcb3a5;
+  padding: 6px 0;
+}
+
+.auth-input-line input {
+  border: none;
+  outline: none;
+  width: 100%;
+  font-size: 14px;
+  padding: 4px 0;
+  background: transparent;
+}
+
+/* Primary CTA */
+.auth-primary-btn {
+  margin-top: 24px;
+  width: 100%;
+  border-radius: 999px;
+  border: none;
+  padding: 12px 16px;
+  font-size: 15px;
+  font-weight: 600;
+  background: #000;
+  color: #fff;
+  cursor: pointer;
+}
+
+.auth-bottom {
+  margin-top: 12px;
+  text-align: center;
+  font-size: 13px;
+  color: #8c8575;
+}
+
+.auth-bottom a {
+  color: #8c8575;
+  text-decoration: underline;
+}
+
+/* API error message */
+.auth-error {
+  color: #b3261e;
+  font-size: 12px;
+}

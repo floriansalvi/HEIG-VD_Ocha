@@ -1,22 +1,24 @@
-<!-- src/views/AllOrdersView.vue -->
 <template>
   <div class="account-page">
-    <!-- HEADER -->
+    <!-- HEADER: back navigation + page title -->
     <header class="account-header">
       <button class="icon-btn" type="button" @click="goBack">←</button>
       <h1 class="account-title">All orders</h1>
+      <!-- Spacer keeps the title centered -->
       <span class="account-header-spacer"></span>
     </header>
 
+    <!-- Global loading / error states -->
     <p v-if="loading" class="hint">Loading orders…</p>
     <p v-else-if="error" class="error">{{ error }}</p>
 
-    <!-- LIST CARD (same DA as Account) -->
+    <!-- LIST CARD (same visual style as AccountView) -->
     <section v-else class="account-card">
       <div class="account-card-header">
         <p class="account-section-title">Order history</p>
       </div>
 
+      <!-- Orders list -->
       <ul class="account-orders-list">
         <li
           v-for="o in ordersUI"
@@ -33,17 +35,20 @@
           </div>
 
           <div class="account-order-right">
+            <!-- Status badge keeps the existing DA from AccountView -->
             <span
               class="account-order-status"
               :class="{
-                'account-order-status--preparation': o.status === 'en préparation' || o.status === 'prête',
-                'account-order-status--finished': o.status === 'récupérée'
+                'account-order-status--preparation':
+                  o.status === 'en préparation' || o.status === 'prête',
+                'account-order-status--finished':
+                  o.status === 'récupérée'
               }"
             >
               {{ o.statusLabel }}
             </span>
 
-            <!-- Arrow opens details (stop so it doesn't double-trigger in some browsers) -->
+            <!-- Arrow also opens details (stop propagation to avoid double-trigger) -->
             <button
               type="button"
               class="account-order-arrow-btn"
@@ -57,12 +62,13 @@
         </li>
       </ul>
 
+      <!-- Empty state -->
       <p v-if="ordersUI.length === 0" class="hint" style="margin: 0;">
         No orders yet.
       </p>
     </section>
 
-    <!-- DETAILS OVERLAY (uses existing overlay CSS from main.css) -->
+    <!-- DETAILS OVERLAY: reuses generic overlay classes defined in main.css -->
     <div v-if="showOverlay" class="overlay-backdrop" @click.self="closeDetails">
       <div class="overlay-card">
         <div class="overlay-header">
@@ -70,26 +76,41 @@
           <button class="overlay-close" type="button" @click="closeDetails">×</button>
         </div>
 
-        <p v-if="detailsError" class="error" style="margin: 0 0 10px;">{{ detailsError }}</p>
+        <!-- Error specific to details/items loading -->
+        <p v-if="detailsError" class="error" style="margin: 0 0 10px;">
+          {{ detailsError }}
+        </p>
 
-        <!-- Basic info -->
-        <div v-if="selectedOrder" style="display:grid; gap: 8px; margin-bottom: 12px;">
+        <!-- Basic order info -->
+        <div
+          v-if="selectedOrder"
+          style="display:grid; gap: 8px; margin-bottom: 12px;"
+        >
           <div style="display:flex; justify-content:space-between; gap: 12px;">
             <span style="color: var(--ocha-muted); font-size: 12px;">Status</span>
-            <span style="font-weight: 700; font-size: 12px;">{{ statusLabel(selectedOrder.status) }}</span>
+            <span style="font-weight: 700; font-size: 12px;">
+              {{ statusLabel(selectedOrder.status) }}
+            </span>
           </div>
 
           <div style="display:flex; justify-content:space-between; gap: 12px;">
             <span style="color: var(--ocha-muted); font-size: 12px;">Store</span>
             <span style="font-weight: 700; font-size: 12px; text-align:right;">
               {{ selectedOrder?.store_id?.name || "Ocha" }}
-              <span v-if="selectedOrder?.store_id?.address?.city"> — {{ selectedOrder.store_id.address.city }}</span>
+              <span v-if="selectedOrder?.store_id?.address?.city">
+                — {{ selectedOrder.store_id.address.city }}
+              </span>
             </span>
           </div>
 
-          <div v-if="selectedOrder.pickup" style="display:flex; justify-content:space-between; gap: 12px;">
+          <div
+            v-if="selectedOrder.pickup"
+            style="display:flex; justify-content:space-between; gap: 12px;"
+          >
             <span style="color: var(--ocha-muted); font-size: 12px;">Pick up</span>
-            <span style="font-weight: 700; font-size: 12px;">{{ fmtPickup(selectedOrder.pickup) }}</span>
+            <span style="font-weight: 700; font-size: 12px;">
+              {{ fmtPickup(selectedOrder.pickup) }}
+            </span>
           </div>
 
           <div style="display:flex; justify-content:space-between; gap: 12px;">
@@ -100,36 +121,52 @@
           </div>
         </div>
 
-        <!-- Items -->
+        <!-- Items list -->
         <p style="margin: 0 0 8px; font-weight: 700; font-size: 13px;">Items</p>
 
-        <p v-if="detailsLoading" class="hint" style="margin: 0;">Loading items…</p>
+        <p v-if="detailsLoading" class="hint" style="margin: 0;">
+          Loading items…
+        </p>
 
-        <ul v-else style="list-style:none; margin:0; padding:0; display:grid; gap: 8px;">
+        <ul
+          v-else
+          style="list-style:none; margin:0; padding:0; display:grid; gap: 8px;"
+        >
           <li
             v-for="it in selectedItems"
             :key="it._key"
             style="background:#fbfaf8;border:1px solid #efe7db;border-radius:14px;padding:10px 12px;display:flex;justify-content:space-between;gap:12px;"
           >
             <div style="min-width:0;">
-              <p style="margin:0;font-weight:700;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+              <p
+                style="margin:0;font-weight:700;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
+              >
                 {{ it.name }}
-                <span v-if="it.size" style="color:var(--ocha-muted);font-weight:700;"> ({{ it.size }})</span>
+                <span
+                  v-if="it.size"
+                  style="color:var(--ocha-muted);font-weight:700;"
+                >
+                  ({{ it.size }})
+                </span>
                 <span style="font-weight:900;"> ×{{ it.quantity }}</span>
               </p>
             </div>
 
-            <p v-if="it.unitPrice != null" style="margin:0;font-weight:900;font-size:12px;white-space:nowrap;">
+            <p
+              v-if="it.unitPrice != null"
+              style="margin:0;font-weight:900;font-size:12px;white-space:nowrap;"
+            >
               {{ formatCHF(it.unitPrice) }} CHF
             </p>
           </li>
 
+          <!-- Items empty state -->
           <li v-if="!selectedItems.length" class="hint" style="list-style:none; margin:0;">
             No items.
           </li>
         </ul>
 
-        <!-- Delete only if finished -->
+        <!-- Delete is allowed only for finished orders (safety rule) -->
         <button
           v-if="selectedOrder && isFinished(selectedOrder)"
           type="button"
@@ -153,12 +190,13 @@ import { useAuthStore } from "@/stores/auth";
 const router = useRouter();
 const auth = useAuthStore();
 
+/* ================= Screen state ================= */
 const loading = ref(false);
 const error = ref("");
 
 const orders = ref([]); // raw backend orders
 
-// Overlay state
+/* ================= Overlay state ================= */
 const showOverlay = ref(false);
 const selectedOrder = ref(null);
 const selectedItems = ref([]);
@@ -169,7 +207,9 @@ function goBack() {
   router.back();
 }
 
-/** Date format: DD.MM.YYYY (matches your UI) */
+/* ================= Formatting helpers ================= */
+
+// Date label: DD.MM.YYYY (matches the rest of the UI)
 function formatDateFR(dateLike) {
   const d = dateLike instanceof Date ? dateLike : new Date(dateLike);
   if (Number.isNaN(d.getTime())) return "—";
@@ -179,7 +219,7 @@ function formatDateFR(dateLike) {
   return `${dd}.${mm}.${yyyy}`;
 }
 
-/** Pickup time format: HH:MM */
+// Pickup time label: HH:MM
 function fmtPickup(dateLike) {
   const d = dateLike instanceof Date ? dateLike : new Date(dateLike);
   if (Number.isNaN(d.getTime())) return "—";
@@ -188,33 +228,40 @@ function fmtPickup(dateLike) {
   return `${hh}:${mm}`;
 }
 
-/** Price format */
+// Currency formatting (CHF)
 function formatCHF(n) {
   const num = Number(n);
   if (!Number.isFinite(num)) return "—";
   return num.toFixed(2);
 }
 
-/** Backend enum: ["en préparation", "prête", "récupérée"] -> label EN */
+// Backend enum: ["en préparation", "prête", "récupérée"] -> UI label (EN)
 function statusLabel(s) {
   if (s === "prête") return "ready";
   if (s === "récupérée") return "finished";
   return "in preparation";
 }
 
+// Only allow deletion when an order is finished
 function isFinished(o) {
   return (o?.status || "") === "récupérée";
 }
 
+/* ================= API ================= */
+
+// Loads the user's orders from the backend
 async function loadOrders() {
   error.value = "";
   orders.value = [];
 
+  // No auth => nothing to fetch
   if (!auth.isAuthenticated) return;
 
   loading.value = true;
   try {
-    const { data } = await api.get("/users/orders", { params: { page: 1, limit: 100 } });
+    const { data } = await api.get("/users/orders", {
+      params: { page: 1, limit: 100 },
+    });
     orders.value = Array.isArray(data?.orders) ? data.orders : [];
   } catch (e) {
     error.value = e?.response?.data?.message || "Failed to load orders";
@@ -223,13 +270,14 @@ async function loadOrders() {
   }
 }
 
-/** UI mapping: keep the same look as Account list */
+// UI mapping: keeps the same list look as AccountView
 const ordersUI = computed(() => {
   const list = Array.isArray(orders.value) ? orders.value : [];
   return list.map((o) => {
     const shop = o?.store_id?.name ? o.store_id.name : "Ocha";
     const total = Number(o?.total_price_chf);
     const totalLabel = Number.isFinite(total) ? `${total.toFixed(2)} CHF` : "—";
+
     return {
       _id: o?._id,
       raw: o,
@@ -241,7 +289,7 @@ const ordersUI = computed(() => {
   });
 });
 
-/** Load items for an order (GET /orders/:id/items) */
+// Loads items for the selected order (GET /orders/:id/items)
 async function loadOrderItems(orderId) {
   detailsLoading.value = true;
   detailsError.value = "";
@@ -256,7 +304,7 @@ async function loadOrderItems(orderId) {
       name: it?.product_name || it?.product_id?.name || "Product",
       size: it?.size || "",
       quantity: Number(it?.quantity) || 1,
-      // Your backend stores final_price_chf on OrderItem (used in your CartView too)
+      // final_price_chf is stored on OrderItem (same logic as CartView)
       unitPrice: Number.isFinite(Number(it?.final_price_chf)) ? Number(it.final_price_chf) : null,
     }));
   } catch (e) {
@@ -266,6 +314,9 @@ async function loadOrderItems(orderId) {
   }
 }
 
+/* ================= Overlay actions ================= */
+
+// Opens the details overlay and fetches items
 async function openDetails(oUI) {
   const o = oUI?.raw;
   if (!o?._id) return;
@@ -276,6 +327,7 @@ async function openDetails(oUI) {
   await loadOrderItems(String(o._id));
 }
 
+// Closes the overlay and resets local detail state
 function closeDetails() {
   showOverlay.value = false;
   selectedOrder.value = null;
@@ -283,7 +335,7 @@ function closeDetails() {
   detailsError.value = "";
 }
 
-/** Delete order only if finished (DELETE /orders/:id) */
+// Deletes an order only when it is finished (DELETE /orders/:id)
 async function deleteSelected() {
   const o = selectedOrder.value;
   if (!o?._id) return;
@@ -294,7 +346,7 @@ async function deleteSelected() {
 
   try {
     await api.delete(`/orders/${o._id}`);
-    // Remove locally
+    // Remove the deleted order from local state
     orders.value = orders.value.filter((x) => x?._id !== o._id);
     closeDetails();
   } catch (e) {
@@ -302,9 +354,11 @@ async function deleteSelected() {
   }
 }
 
+/* ================= Lifecycle ================= */
+
 onMounted(loadOrders);
 
-// If this view is under <keep-alive> (tab navigation), refresh when returning
+// If this view is inside <keep-alive>, refresh when returning to it
 onActivated(() => {
   loadOrders();
 });

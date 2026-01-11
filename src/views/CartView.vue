@@ -1,48 +1,49 @@
-<!-- src/views/CartView.vue -->
 <template>
   <div class="cart-page">
-    <!-- HEADER -->
+    <!-- HEADER: back button + screen title -->
     <header class="cart-header">
       <button class="icon-btn" type="button" @click="goBack">←</button>
       <h1 class="cart-title">Order</h1>
       <span class="cart-header-spacer"></span>
     </header>
 
-    <!-- STORES LOADING/ERROR -->
+    <!-- STORES: loading + error states -->
     <p v-if="storesLoading" class="hint">Loading stores…</p>
     <p v-if="storesError" class="error">{{ storesError }}</p>
 
-    <!-- ORDERS LOADING/ERROR -->
+    <!-- ORDERS: loading + empty + error states -->
     <p v-if="ordersLoading" class="hint">Loading your orders…</p>
     <p v-else-if="!ordersLoading && activeOrders.length === 0" class="hint">
       No orders in progress
     </p>
     <p v-if="ordersError" class="error">{{ ordersError }}</p>
 
-    <!-- ✅ ALL ACTIVE ORDERS (in preparation + ready) -->
+    <!-- ACTIVE ORDERS (DB): "en préparation" + "prête" only -->
     <section v-if="activeOrders.length" class="ongoing-list">
       <article v-for="order in activeOrders" :key="order._id" class="ongoing-card">
         <div class="ongoing-top">
           <div class="ongoing-title-wrap">
             <p class="ongoing-title">Ongoing order</p>
 
+            <!-- Status pill: dot + label -->
             <div class="ongoing-status">
               <span
                 class="ongoing-dot"
                 :class="{ 'ongoing-dot--ready': statusLower(order.status) === 'prête' }"
               ></span>
 
-              <!-- ✅ status EN (DB remains FR) -->
+              <!-- UI shows EN status, DB keeps FR -->
               <span class="ongoing-status-text">
                 {{ statusLabelEn(order.status) }}
               </span>
             </div>
           </div>
 
-          <!-- ✅ PRICE ONLY ON TOP RIGHT -->
+          <!-- Total displayed once (top right) -->
           <p class="ongoing-total">{{ formatCHF(orderComputedTotal(order)) }} CHF</p>
         </div>
 
+        <!-- Store + pickup time -->
         <div class="ongoing-meta">
           <div class="ongoing-meta-row">
             <span class="ongoing-ico">📍</span>
@@ -55,17 +56,19 @@
           </div>
         </div>
 
+        <!-- Short items summary (loaded per order) -->
         <div class="ongoing-bottom">
           <p class="ongoing-summary">{{ orderSummary(order) }}</p>
-          <!-- ✅ removed duplicated bottom price -->
+          <!-- duplicated bottom price intentionally removed -->
         </div>
       </article>
     </section>
 
-    <!-- CART LIST (local) -->
+    <!-- LOCAL CART (Pinia + localStorage) -->
     <section class="cart-list">
       <article v-for="item in cartItems" :key="item.key" class="cart-item">
         <div class="cart-item-main">
+          <!-- Thumbnail (optional) -->
           <div class="cart-thumb">
             <img
               v-if="item.imageUrl"
@@ -77,14 +80,17 @@
             />
           </div>
 
+          <!-- Product info -->
           <div class="cart-item-info">
             <p class="cart-item-name">{{ item.name }}</p>
             <p class="cart-item-size">Size: {{ item.size }}</p>
           </div>
 
+          <!-- Line total -->
           <p class="cart-item-price">{{ formatCHF(item.lineTotal) }} CHF</p>
         </div>
 
+        <!-- Unit price + quantity controls -->
         <div class="cart-item-meta-row">
           <p class="cart-item-meta">{{ formatCHF(item.unitPrice) }} CHF / unit</p>
 
@@ -107,18 +113,20 @@
         </div>
       </article>
 
+      <!-- Empty cart state -->
       <p v-if="cartItems.length === 0" class="hint" style="text-align:center;">
         Your cart is empty.
       </p>
     </section>
 
-    <!-- SUMMARY -->
+    <!-- CHECKOUT SUMMARY -->
     <section class="cart-summary">
       <div class="cart-total-line">
         <span>Total</span>
         <span class="cart-total-amount">{{ formatCHF(totalPrice) }} CHF</span>
       </div>
 
+      <!-- Store selection -->
       <button
         class="cart-choose-btn"
         type="button"
@@ -131,6 +139,7 @@
         </div>
       </button>
 
+      <!-- Pickup time selection -->
       <button
         class="cart-choose-btn"
         type="button"
@@ -143,6 +152,7 @@
         </div>
       </button>
 
+      <!-- Continue to order summary screen -->
       <button
         class="cart-place-btn"
         type="button"
@@ -153,7 +163,7 @@
       </button>
     </section>
 
-    <!-- OVERLAYS -->
+    <!-- OVERLAYS: store + time pickers -->
     <StoreSelectOverlay
       v-if="showStoreOverlay"
       :stores="stores"
@@ -187,13 +197,16 @@ const router = useRouter();
 const cart = useCartStore();
 const auth = useAuthStore();
 
-/* ---------- helpers ---------- */
+/* ---------------- helpers ---------------- */
+
+/** Format CHF numbers (UI adds "CHF" separately in most places). */
 function formatCHF(n) {
   const num = Number(n);
   if (!Number.isFinite(num)) return "—";
   return num.toFixed(2);
 }
 
+/** Convert a date to "HH:mm" (used for pickup time display). */
 function toHHMM(dateLike) {
   const d = dateLike instanceof Date ? dateLike : new Date(dateLike);
   if (Number.isNaN(d.getTime())) return "—";
@@ -202,11 +215,12 @@ function toHHMM(dateLike) {
   return `${hh}:${mm}`;
 }
 
+/** Normalize status for comparisons. */
 function statusLower(s) {
   return String(s || "").toLowerCase().trim();
 }
 
-/* ✅ FR -> EN (DB stays FR) */
+/** FR -> EN mapping for the UI (backend remains in FR). */
 const STATUS_TO_EN = {
   "en préparation": "In preparation",
   "prête": "Ready",
@@ -217,12 +231,14 @@ function statusLabelEn(status) {
   return STATUS_TO_EN[s] || "In preparation";
 }
 
+/** Convert "HH:mm" into minutes since midnight. */
 function minutesOf(hhmm) {
   const [h, m] = String(hhmm || "").split(":").map(Number);
   if (!Number.isFinite(h) || !Number.isFinite(m)) return null;
   return h * 60 + m;
 }
 
+/** Round a date up to the next step (ex: next 15 min). */
 function ceilToNextStepMinutes(date, step = 15) {
   const d = new Date(date);
   if (Number.isNaN(d.getTime())) return null;
@@ -230,7 +246,13 @@ function ceilToNextStepMinutes(date, step = 15) {
   return new Date(Math.ceil(d.getTime() / stepMs) * stepMs);
 }
 
-/* ---------- local cart ---------- */
+/* ---------------- local cart (Pinia) ---------------- */
+
+/**
+ * UI-friendly cart items:
+ * - adds a stable key (productId + size)
+ * - computes line totals
+ */
 const cartItems = computed(() => {
   const items = Array.isArray(cart.items) ? cart.items : [];
   return items.map((it) => ({
@@ -247,6 +269,7 @@ const cartItems = computed(() => {
 
 const totalPrice = computed(() => Number(cart.totalAmount) || 0);
 
+/** Quantity controls rely on the cart store to persist changes. */
 function increase(item) {
   cart.setQuantity(item.productId, item.size, item.quantity + 1);
 }
@@ -257,7 +280,8 @@ function remove(item) {
   cart.removeItem(item.productId, item.size);
 }
 
-/* ---------- stores ---------- */
+/* ---------------- stores (DB) ---------------- */
+
 const stores = ref([]);
 const storesLoading = ref(false);
 const storesError = ref("");
@@ -277,18 +301,20 @@ async function loadStores() {
   }
 }
 
-/* ---------- orders (DB) ---------- */
+/* ---------------- orders (DB) ---------------- */
+
 const ordersLoading = ref(false);
 const ordersError = ref("");
 const myOrders = ref([]);
 
-// cache items by orderId
+/** Cache items per orderId to avoid refetching on every render. */
 const orderItemsById = ref({});
 
 async function loadMyOrders() {
   ordersError.value = "";
   myOrders.value = [];
 
+  // No API call if user isn't authenticated
   if (!auth.isAuthenticated) return;
 
   ordersLoading.value = true;
@@ -303,12 +329,16 @@ async function loadMyOrders() {
   }
 }
 
-// ✅ display everything except "récupérée"
+/** Active orders = everything except "récupérée". */
 const activeOrders = computed(() => {
   const list = Array.isArray(myOrders.value) ? myOrders.value : [];
   return list.filter((o) => statusLower(o?.status) !== "récupérée");
 });
 
+/**
+ * Lazy-load order items (per order) and store them in a local cache.
+ * This is used for summaries + computed totals.
+ */
 async function ensureOrderItemsLoaded(orderId) {
   if (!orderId) return;
   if (orderItemsById.value[orderId]) return;
@@ -332,6 +362,10 @@ async function ensureOrderItemsLoaded(orderId) {
   }
 }
 
+/**
+ * When active orders change, ensure item data is loaded for each order.
+ * immediate: true => runs once on mount as well.
+ */
 watch(
   activeOrders,
   (orders) => {
@@ -340,23 +374,31 @@ watch(
   { immediate: true }
 );
 
+/** Format pickup time for a given order. */
 function pickupLabel(order) {
   return order?.pickup ? toHHMM(order.pickup) : "—";
 }
 
+/** Store label uses populated store_id with an optional city. */
 function shopLabel(order) {
-  const s = order?.store_id; // populate backend
+  const s = order?.store_id;
   if (!s) return "—";
   const city = s?.address?.city;
   return city ? `${s.name} — ${city}` : s.name;
 }
 
+/** Get cached items for one order. */
 function orderItems(order) {
   const id = order?._id;
   if (!id) return [];
   return Array.isArray(orderItemsById.value[id]) ? orderItemsById.value[id] : [];
 }
 
+/**
+ * Compute the order total:
+ * - prefer items sum if items are loaded
+ * - fallback to backend total_price_chf if available
+ */
 function orderComputedTotal(order) {
   const items = orderItems(order);
   if (items.length) {
@@ -370,6 +412,11 @@ function orderComputedTotal(order) {
   return Number.isFinite(fallback) ? fallback : 0;
 }
 
+/**
+ * Build a short summary:
+ * - group by product name
+ * - show max 3 items, then "and X more"
+ */
 function orderSummary(order) {
   const items = orderItems(order);
   if (!items.length) return "—";
@@ -388,22 +435,31 @@ function orderSummary(order) {
   return parts.join(", ");
 }
 
-/* ---------- choose store/time (opening_hours) ---------- */
+/* ---------------- store/time selection ---------------- */
+
 const selectedStore = ref(null);
 const selectedTime = ref("");
 
+/** Human-readable store label for the selection button. */
 const selectedStoreLabel = computed(() => {
   if (!selectedStore.value) return "No store selected";
   const city = selectedStore.value?.address?.city || "";
   return city ? `${selectedStore.value.name}, ${city}` : selectedStore.value.name;
 });
 
-const selectedTimeLabel = computed(() => (selectedTime.value ? selectedTime.value : "No time selected"));
+/** Human-readable time label for the selection button. */
+const selectedTimeLabel = computed(() =>
+  selectedTime.value ? selectedTime.value : "No time selected"
+);
 
+/**
+ * Read today's opening hours from the store document.
+ * Assumes opening_hours is an array of 7 entries, indexed by JS day (0=Sunday).
+ */
 function openingHoursForToday(store) {
   const oh = store?.opening_hours;
   if (!Array.isArray(oh) || oh.length < 7) return null;
-  const day = new Date().getDay(); // 0..6 (Sunday=0)
+  const day = new Date().getDay();
   const range = oh[day];
   if (!Array.isArray(range) || range.length < 2) return null;
   const [open, close] = range;
@@ -411,6 +467,11 @@ function openingHoursForToday(store) {
   return { open, close };
 }
 
+/**
+ * Generate pickup times every 15 minutes:
+ * - inside opening hours
+ * - starting from the next quarter-hour from "now"
+ */
 const availableTimes = computed(() => {
   const s = selectedStore.value;
   if (!s) return [];
@@ -438,13 +499,15 @@ const availableTimes = computed(() => {
   return out;
 });
 
+/** Reset selected time if it becomes invalid after changing store/hours. */
 watch([selectedStore, availableTimes], () => {
   if (selectedTime.value && !availableTimes.value.includes(selectedTime.value)) {
     selectedTime.value = "";
   }
 });
 
-/* ---------- overlays ---------- */
+/* ---------------- overlays ---------------- */
+
 const showStoreOverlay = ref(false);
 const showTimeOverlay = ref(false);
 
@@ -455,6 +518,7 @@ function openTimeOverlay() {
   showTimeOverlay.value = true;
 }
 
+/** Accept either a store object or a storeId from the overlay component. */
 function handleStoreSelected(storeOrId) {
   const s =
     typeof storeOrId === "string"
@@ -471,11 +535,16 @@ function handleTimeSelected(time) {
   showTimeOverlay.value = false;
 }
 
-/* ---------- nav ---------- */
+/* ---------------- navigation ---------------- */
+
 function goBack() {
   router.back();
 }
 
+/**
+ * Continue to the OrderSummary screen:
+ * passing selection via query params keeps the flow simple for the UI.
+ */
 function goToOrderSummary() {
   router.push({
     name: "order-summary",
@@ -487,7 +556,9 @@ function goToOrderSummary() {
   });
 }
 
-/* ---------- lifecycle ---------- */
+/* ---------------- lifecycle ---------------- */
+
+/** Lightweight refresh when returning to this view (keep-alive). */
 async function refreshOrdersLight() {
   await loadMyOrders();
 }

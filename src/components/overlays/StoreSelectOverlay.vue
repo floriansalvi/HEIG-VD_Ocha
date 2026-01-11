@@ -1,13 +1,15 @@
 <!-- src/components/overlays/StoreSelectOverlay.vue -->
 <template>
+  <!-- Backdrop: click outside the card closes the overlay -->
   <div class="overlay-backdrop" @click.self="emit('close')">
     <div class="overlay-card">
+      <!-- Header: title + close button -->
       <div class="overlay-header">
         <h3 class="overlay-title">Choose the shop</h3>
         <button class="overlay-close" type="button" @click="emit('close')">×</button>
       </div>
 
-      <!-- INFO GEOLOC -->
+      <!-- Geolocation helper messages (optional UI feedback) -->
       <p v-if="geoStatus === 'loading'" class="overlay-geo-text">
         Getting your location…
       </p>
@@ -15,7 +17,7 @@
         Location access denied — showing default order.
       </p>
 
-      <!-- MAP -->
+      <!-- Mini map: user marker + all stores markers -->
       <div class="overlay-map">
         <LeafletMiniMap
           :center="mapCenter"
@@ -27,7 +29,7 @@
         />
       </div>
 
-      <!-- STORES AROUND YOU -->
+      <!-- Stores near the user (only shown if geolocation is available) -->
       <div v-if="geoOk && storesAroundYou.length" class="overlay-section">
         <p class="overlay-section-title">Stores around you</p>
 
@@ -52,7 +54,7 @@
         </ul>
       </div>
 
-      <!-- OTHER STORES -->
+      <!-- Full stores list (sorted by distance when geolocation is available) -->
       <div class="overlay-section">
         <p class="overlay-section-title">{{ geoOk ? "Other stores" : "Stores" }}</p>
 
@@ -77,6 +79,7 @@
         </ul>
       </div>
 
+      <!-- Confirm button returns the selected store object to the parent -->
       <button class="overlay-primary-btn" type="button" :disabled="!current" @click="confirm">
         Confirm
       </button>
@@ -89,21 +92,31 @@ import { computed, ref, watch, onMounted } from "vue";
 import LeafletMiniMap from "@/components/ui/OchaMap.vue";
 
 const props = defineProps({
+  // Stores list from the parent view (already fetched from the API)
   stores: { type: Array, default: () => [] },
+  // Current selected store id coming from the parent
   selectedId: { type: [String, null], default: null },
 });
 
 const emit = defineEmits(["close", "select"]);
 
+// Local selection state so the overlay can change selection without mutating props
 const localSelectedId = ref(props.selectedId);
 watch(() => props.selectedId, (v) => (localSelectedId.value = v));
 
-/* ---------- GEOLOC ---------- */
-const geoStatus = ref("idle"); // idle | loading | ok | denied | error
-const userLoc = ref(null); // { lat, lng }
+/* ---------- GEOLOCATION STATE ---------- */
+// idle | loading | ok | denied | error
+const geoStatus = ref("idle");
+// user location stored as { lat, lng }
+const userLoc = ref(null);
+// convenience boolean used across the UI/computed props
 const geoOk = computed(() => geoStatus.value === "ok" && !!userLoc.value);
 
-/* ---------- COORDS HELPERS (DB GeoJSON: [lng, lat]) ---------- */
+/* ---------- COORDS HELPERS ---------- */
+/**
+ * Backend stores coordinates in GeoJSON format: [lng, lat]
+ * This helper converts it to { lat, lng } for the UI/map.
+ */
 function getLatLngFromStore(store) {
   const coords = store?.location?.coordinates;
   if (!Array.isArray(coords) || coords.length < 2) return null;
@@ -115,7 +128,11 @@ function getLatLngFromStore(store) {
   return { lat, lng };
 }
 
-/* ---------- DISTANCE ---------- */
+/* ---------- DISTANCE HELPERS ---------- */
+/**
+ * Haversine distance in km between 2 points:
+ * a = {lat,lng}, b = {lat,lng}
+ */
 function distanceKm(a, b) {
   const R = 6371;
   const toRad = (x) => (x * Math.PI) / 180;
@@ -133,6 +150,7 @@ function distanceKm(a, b) {
   return 2 * R * Math.asin(Math.sqrt(h));
 }
 
+/** Small formatter for distances (m under 1km, km otherwise). */
 function formatKm(km) {
   if (!Number.isFinite(km)) return "";
   if (km < 1) return `${Math.round(km * 1000)} m`;
@@ -140,6 +158,10 @@ function formatKm(km) {
 }
 
 /* ---------- STORES SORTED BY DISTANCE ---------- */
+/**
+ * Adds a temporary _distanceKm field to stores when geolocation is available.
+ * Then sorts by distance (unknown distances go at the end).
+ */
 const storesWithDistance = computed(() => {
   const base = Array.isArray(props.stores) ? props.stores : [];
   if (!geoOk.value) return base.map((s) => ({ ...s, _distanceKm: null }));
@@ -159,9 +181,15 @@ const storesWithDistance = computed(() => {
     });
 });
 
+// "around you" section settings
 const AROUND_RADIUS_KM = 8;
 const AROUND_MAX = 3;
 
+/**
+ * Picks up to 3 stores:
+ * - preferably within radius
+ * - otherwise nearest 3 stores
+ */
 const storesAroundYou = computed(() => {
   if (!geoOk.value) return [];
   const list = storesWithDistance.value.filter((s) => s._distanceKm != null);
@@ -170,22 +198,31 @@ const storesAroundYou = computed(() => {
   return list.slice(0, AROUND_MAX);
 });
 
+/** "Other stores" excludes those already shown in "around you". */
 const otherStores = computed(() => {
   const idsAround = new Set(storesAroundYou.value.map((s) => s._id));
   return storesWithDistance.value.filter((s) => !idsAround.has(s._id));
 });
 
+/** Current selected store object (used for "Confirm"). */
 const current = computed(() => {
   const list = Array.isArray(props.stores) ? props.stores : [];
   return list.find((s) => String(s._id) === String(localSelectedId.value)) || null;
 });
 
-/* ---------- MAP: ✅ TOUS LES STORES ---------- */
+/* ---------- MAP COMPUTED DATA ---------- */
+/** Only keep stores that have valid coordinates for map markers. */
 const storesForMap = computed(() => {
   const base = Array.isArray(props.stores) ? props.stores : [];
   return base.filter((s) => !!getLatLngFromStore(s));
 });
 
+/**
+ * Map center priority:
+ * 1) user location (if available)
+ * 2) first valid store
+ * 3) Lausanne fallback
+ */
 const mapCenter = computed(() => {
   if (geoOk.value && userLoc.value) return userLoc.value;
 
@@ -196,6 +233,11 @@ const mapCenter = computed(() => {
   return { lat: 46.5197, lng: 6.6323 };
 });
 
+/**
+ * Map markers:
+ * - user marker (optional)
+ * - all store markers + tooltip data
+ */
 const mapMarkers = computed(() => {
   const markers = [];
 
@@ -211,7 +253,7 @@ const mapMarkers = computed(() => {
       id: s._id,
       type: "store",
       ...ll,
-      // ✅ infos tooltip
+      // Tooltip infos used by the map component
       name: s.name,
       opening_hours: s.opening_hours,
     });
@@ -221,13 +263,18 @@ const mapMarkers = computed(() => {
 });
 
 /* ---------- ACTIONS ---------- */
+/** Confirms selection and closes overlay. */
 function confirm() {
   if (!current.value) return;
   emit("select", current.value);
   emit("close");
 }
 
-/* ---------- INIT GEOLOC ---------- */
+/* ---------- GEOLOCATION INIT ---------- */
+/**
+ * Try to get user's position once.
+ * If blocked/denied, we just keep default ordering (no crash).
+ */
 onMounted(() => {
   if (!navigator.geolocation) {
     geoStatus.value = "error";
@@ -250,6 +297,7 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* Geolocation helper text (small + subtle) */
 .overlay-geo-text {
   margin: 0 0 10px;
   font-size: 12px;
