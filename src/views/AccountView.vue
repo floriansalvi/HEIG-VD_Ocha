@@ -53,7 +53,8 @@
 
       <div class="account-barcode-wrapper">
         <div class="account-barcode-inner">
-          <div class="account-barcode-stripes"></div>
+          <!-- ✅ real image instead of fake stripes -->
+          <img class="account-barcode-img" :src="barcodeUrl" alt="Barcode" draggable="false" />
         </div>
         <p class="account-barcode-number">9007438329951</p>
       </div>
@@ -89,7 +90,6 @@
       <div class="account-card-header">
         <p class="account-section-title">Order history</p>
 
-        <!-- Navigate to the full orders page -->
         <button
           type="button"
           class="account-link-btn"
@@ -138,32 +138,26 @@ import { useRouter } from "vue-router";
 import api from "@/services/api";
 import { useAuthStore } from "@/stores/auth";
 
+import barcodeUrl from "@/assets/codebar.jpeg";
+
 const router = useRouter();
 const auth = useAuthStore();
 
 /* ---------------- Helpers ---------------- */
-
-/** Format a date to Swiss French locale (e.g., 11.01.2026). */
 function fmtDateFR(dateLike) {
   const d = dateLike instanceof Date ? dateLike : new Date(dateLike);
   if (Number.isNaN(d.getTime())) return "—";
   return d.toLocaleDateString("fr-CH");
 }
 
-/**
- * Convert backend French status -> normalized EN status + label.
- * Backend values: "en préparation" | "prête" | "récupérée"
- */
 function normalizeStatus(frStatus) {
   const s = String(frStatus || "").toLowerCase().trim();
   if (s === "en préparation") return { status: "in preparation", label: "in preparation" };
   if (s === "prête") return { status: "ready", label: "ready" };
   if (s === "récupérée") return { status: "finished", label: "finished" };
-  // Fallback: keep something readable
   return { status: s || "in preparation", label: s || "in preparation" };
 }
 
-/** Build a short order summary like "2× Mango Matcha, 1× Classic Matcha". */
 function buildSummaryFromItems(items) {
   if (!Array.isArray(items) || items.length === 0) return "—";
   const map = new Map();
@@ -178,15 +172,10 @@ function buildSummaryFromItems(items) {
 }
 
 /* ---------------- Profile (DB) ---------------- */
-
 const profile = ref(null);
 const profileLoading = ref(false);
 const profileError = ref("");
 
-/**
- * Loads the currently authenticated user.
- * Requires Authorization: Bearer <token> (handled by axios interceptor).
- */
 async function loadProfile() {
   profileLoading.value = true;
   profileError.value = "";
@@ -206,15 +195,10 @@ const profileCreatedAt = computed(() => {
 });
 
 /* ---------------- Orders (DB) ---------------- */
-
 const ordersLoading = ref(false);
 const ordersError = ref("");
 const ordersUi = ref([]);
 
-/**
- * Loads the latest orders (first 10) then fetches items for each order
- * to build a readable summary.
- */
 async function loadOrders() {
   ordersLoading.value = true;
   ordersError.value = "";
@@ -229,7 +213,6 @@ async function loadOrders() {
         const id = o?._id || o?.id;
         let items = [];
 
-        // Fetch order items for summary (non-blocking if it fails)
         if (id) {
           try {
             const { data } = await api.get(`/orders/${id}/items`);
@@ -251,9 +234,7 @@ async function loadOrders() {
       })
     );
 
-    ordersUi.value = enriched
-      .filter((r) => r.status === "fulfilled")
-      .map((r) => r.value);
+    ordersUi.value = enriched.filter((r) => r.status === "fulfilled").map((r) => r.value);
   } catch (e) {
     ordersError.value = e?.response?.data?.message || e?.message || "Failed to load orders";
   } finally {
@@ -262,11 +243,6 @@ async function loadOrders() {
 }
 
 /* ---------------- Logout ---------------- */
-
-/**
- * Logout = delete token from localStorage (auth_token) and clear user state.
- * After logout, redirect to login.
- */
 function onLogout() {
   auth.logout();
   router.push({ name: "login" }).catch(() => router.push("/login"));
@@ -295,4 +271,13 @@ onMounted(async () => {
 .account-profile-row { display: flex; justify-content: space-between; gap: 12px; }
 .account-profile-label { color: #8b8375; font-size: 12px; }
 .account-profile-value { font-weight: 600; font-size: 12px; }
+
+/* ✅ barcode image sizing (same as your old stripes height) */
+.account-barcode-img{
+  width: 100%;
+  height: 56px;
+  object-fit: cover;
+  display: block;
+  border-radius: 8px;
+}
 </style>

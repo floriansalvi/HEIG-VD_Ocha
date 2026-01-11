@@ -1,17 +1,18 @@
 <!-- src/views/HomeView.vue -->
 <template>
   <div class="home">
-    <!-- HERO -->
+    <!-- HERO (UNCHANGED) -->
     <section class="home-hero">
       <div class="home-hero-bg"></div>
       <div class="home-hero-gradient"></div>
-      <div class="home-hero-dark"></div>
+      <!-- ✅ darker overlay behind logo -->
+      <div class="home-hero-overlay"></div>
 
       <img class="home-hero-logo-img" :src="logoUrl" alt="Ocha" draggable="false" />
 
       <div class="home-hero-content">
         <button class="home-hero-cta" type="button" @click="goToUsualOrder">
-          <span>Purchase my usual order</span>
+          <span>Go to my account</span>
           <span class="home-hero-cta-icon">➜</span>
         </button>
       </div>
@@ -21,8 +22,8 @@
     <section class="section home-section">
       <div class="section-header">
         <h2>Today's selection</h2>
-        <!-- ✅ envoie vers ta page products (à adapter si ton route name diffère) -->
-        <button class="link-btn" type="button" @click="goToAllDrinks">See more</button>
+        <!-- ✅ same DA as app (pill) -->
+        <button class="home-see-more" type="button" @click="goToAllDrinks">See more</button>
       </div>
 
       <p v-if="selectionLoading" class="hint">Loading selection…</p>
@@ -64,12 +65,14 @@
       </div>
     </section>
 
-    <!-- PROMO CARDS (unchanged) -->
+    <!-- PROMOTIONS (IMAGES) -->
     <section class="section home-section">
       <h2 class="home-section-title">Promotions</h2>
 
-      <div class="promo-large">
-        <div class="promo-large-img"></div>
+      <div class="promo-large promo-large--img">
+        <div class="promo-large-img">
+          <img class="promo-large-img-el" :src="onetwoUrl" alt="Buy 1 get 1" loading="lazy" />
+        </div>
         <div class="promo-large-content">
           <p class="promo-large-title">Buy 1 get 1 free</p>
           <p class="promo-large-sub">On classic matcha latte</p>
@@ -77,8 +80,10 @@
         </div>
       </div>
 
-      <div class="promo-large promo-large--cookie">
-        <div class="promo-large-img"></div>
+      <div class="promo-large promo-large--cookie promo-large--img">
+        <div class="promo-large-img">
+          <img class="promo-large-img-el" :src="accueil2Url" alt="Matcha cookie" loading="lazy" />
+        </div>
         <div class="promo-large-content">
           <p class="promo-large-title">Matcha cookie</p>
           <p class="promo-large-sub">Perfect with your drink</p>
@@ -86,37 +91,30 @@
       </div>
     </section>
 
-    <!-- 2 CUPS LEFT (mock) -->
+    <!-- 2 CUPS LEFT (image background + dark overlay) -->
     <section class="section home-section">
-      <div class="stamps-card">
+      <div class="stamps-card stamps-card--img">
+        <div class="stamps-bg" :style="{ backgroundImage: `url(${matchaCupUrl})` }" aria-hidden="true"></div>
+        <div class="stamps-bg-dark" aria-hidden="true"></div>
+
         <p class="stamps-title">2 cups left</p>
         <p class="stamps-sub">Buy 2 more to get 1 free!</p>
 
         <div class="stamps-dots">
-          <span
-            v-for="n in 5"
-            :key="n"
-            class="stamp-dot"
-            :class="{ 'stamp-dot--filled': n <= 3 }"
-          />
+          <span v-for="n in 5" :key="n" class="stamp-dot" :class="{ 'stamp-dot--filled': n <= 3 }" />
         </div>
       </div>
     </section>
 
-    <!-- MAP (DB + pins + tooltip infos) -->
+    <!-- MAP -->
     <section class="section home-section">
       <h2 class="home-section-title">Where to find us</h2>
 
       <p v-if="storesLoading" class="hint">Loading stores…</p>
       <p v-else-if="storesError" class="error">{{ storesError }}</p>
 
-      <div v-else class="map-card">
-        <OchaMapStore
-          :center="mapCenter"
-          :markers="mapMarkers"
-          :fit-to-markers="true"
-          :zoom="13"
-        />
+      <div v-else class="map-card home-map-card">
+        <OchaMapStore :center="mapCenter" :markers="mapMarkers" :fit-to-markers="true" :zoom="13" />
       </div>
     </section>
   </div>
@@ -128,7 +126,11 @@ import { useRouter } from "vue-router";
 import api from "@/services/api";
 
 import logoUrl from "@/assets/logo-ocha.png";
-import OchaMapStore from "@/components/ui/OchaMap.vue"; // ✅ garde TON path réel
+import onetwoUrl from "@/assets/onetwo.jpeg";
+import accueil2Url from "@/assets/accueil2.jpeg";
+import matchaCupUrl from "@/assets/matchacup.jpeg";
+
+import OchaMapStore from "@/components/ui/OchaMap.vue";
 
 const router = useRouter();
 
@@ -160,7 +162,7 @@ function shuffle(arr) {
   return a;
 }
 
-/* ---------- Today's selection (DB) ---------- */
+/* ---------- Today's selection ---------- */
 const todaysSelection = ref([]);
 const selectionLoading = ref(false);
 const selectionError = ref("");
@@ -196,30 +198,25 @@ function onImgError(drink) {
 
 /* ---------- navigation ---------- */
 function goToAllDrinks() {
-  // ✅ si tu as un route name précis, mets-le ici
   router.push({ name: "products" }).catch(() => router.push("/products"));
 }
-
 function goToProduct(drink) {
   const id = drink?._id || drink?.id;
   if (!id) return;
-
   router
     .push({ name: "product-detail", params: { id: String(id) } })
     .catch(() => router.push(`/products/${id}`));
 }
-
 function goToUsualOrder() {
   router.push({ name: "account" }).catch(() => router.push("/account"));
 }
 
-/* ---------- STORES MAP (DB) ---------- */
+/* ---------- stores map ---------- */
 const stores = ref([]);
 const storesLoading = ref(false);
 const storesError = ref("");
 
 function getLatLngFromStore(store) {
-  // ✅ GeoJSON: [lng, lat]
   const coords = store?.location?.coordinates;
   if (!Array.isArray(coords) || coords.length < 2) return null;
 
@@ -237,15 +234,7 @@ const mapMarkers = computed(() => {
     .map((s) => {
       const ll = getLatLngFromStore(s);
       if (!ll) return null;
-
-      return {
-        id: s._id,
-        type: "store",
-        ...ll,
-        // ✅ infos tooltip
-        name: s.name,
-        opening_hours: s.opening_hours,
-      };
+      return { id: s._id, type: "store", ...ll, name: s.name, opening_hours: s.opening_hours };
     })
     .filter(Boolean);
 });
@@ -256,13 +245,9 @@ async function loadStoresForMap() {
   stores.value = [];
 
   try {
-    const { data } = await api.get("/stores", {
-      params: { active: "true", page: 1, limit: 500 },
-    });
-
+    const { data } = await api.get("/stores", { params: { active: "true", page: 1, limit: 500 } });
     stores.value = Array.isArray(data?.stores) ? data.stores : [];
 
-    // centre sur le 1er store valide
     const first = stores.value.find((s) => !!getLatLngFromStore(s));
     const ll = first ? getLatLngFromStore(first) : null;
     if (ll) mapCenter.value = ll;
@@ -280,68 +265,111 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.home-hero {
-  position: relative;
-  overflow: hidden;
-}
-.home-hero-bg,
-.home-hero-gradient,
-.home-hero-dark {
-  position: absolute;
-  inset: 0;
-}
-.home-hero-bg {
-  z-index: 1;
-}
-.home-hero-gradient {
-  z-index: 2;
-}
-.home-hero-dark {
-  z-index: 3;
-  background: rgba(0, 0, 0, 0.35);
-  pointer-events: none;
+/* ✅ spacing (clean, no duplicates) */
+.home-hero { margin-bottom: 22px; }
+.home-section { margin-bottom: 26px; }
+
+/* title + see more */
+.section-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom: 12px;
 }
 
-.home-hero-logo-img {
-  position: absolute;
-  left: 50%;
-  top: 38%;
-  transform: translate(-50%, -50%);
+/* See more = same DA (pill) */
+.home-see-more{
+  border: 1px solid #ddd3c7;
+  background: #ffffff;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 12px;
+  color: #6c6254;
+  cursor: pointer;
+}
+.home-see-more:active { transform: scale(0.98); }
+
+
+.fav-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.fav-card-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.fav-card-add {
+  margin-top: auto;
+}
+/* cards images */
+.fav-card-img { overflow: hidden; }
+.fav-card-img-el { width:100%; height:100%; object-fit:cover; display:block; }
+
+/* promotions images */
+.promo-large--img .promo-large-img { overflow: hidden; }
+.promo-large-img-el { width:100%; height:110px; object-fit:cover; display:block; }
+
+/* ✅ 2 cups image background + dark overlay for readability */
+.stamps-card--img{ position:relative; overflow:hidden; }
+.stamps-bg{
+  position:absolute;
+  inset:0;
+  background-position:center;
+  background-size:cover;
+  background-repeat:no-repeat;
+  opacity: 1;
+}
+.stamps-bg-dark{
+  position:absolute;
+  inset:0;
+  background: rgba(0,0,0,0.35); /* ✅ dark between bg and text */
+}
+.stamps-card--img > *{ position:relative; z-index:1; }
+
+/* ✅ hero dark overlay (behind logo) */
+.home-hero { position: relative; overflow: hidden; }
+.home-hero-bg,
+.home-hero-gradient{
+  position:absolute;
+  inset:0;
+}
+.home-hero-overlay{
+  position:absolute;
+  inset:0;
+  background: rgba(0,0,0,0.35); /* ✅ requested dark */
+  z-index: 3;
+  pointer-events:none;
+}
+.home-hero-logo-img{
+  position:absolute;
+  left:50%;
+  top:38%;
+  transform:translate(-50%,-50%);
   z-index: 4;
   width: min(230px, 65%);
-  height: auto;
-  display: block;
+  height:auto;
+  display:block;
 }
-
-.home-hero-content {
-  position: relative;
+.home-hero-content{
+  position:relative;
   z-index: 4;
-  height: 160%;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
+  height:160%;
+  display:flex;
+  align-items:flex-end;
+  justify-content:center;
 }
 
-/* images cards */
-.fav-card-img {
+/* ✅ map spacing + rounded */
+.home-map-card{
+  margin-top: 12px;
+  border-radius: 16px;
   overflow: hidden;
-}
-.fav-card-img-el {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
 }
 
 /* messages */
-.hint {
-  margin: 0 0 10px;
-  font-size: 12px;
-  color: #8b8375;
-}
-.error {
-  margin: 0 0 10px;
-  font-size: 12px;
-  color: #b00020;
-}
+.hint { margin: 0 0 10px; font-size: 12px; color: #8b8375; }
+.error { margin: 0 0 10px; font-size: 12px; color: #b00020; }
 </style>
