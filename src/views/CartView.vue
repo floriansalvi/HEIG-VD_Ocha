@@ -19,13 +19,9 @@
     </p>
     <p v-if="ordersError" class="error">{{ ordersError }}</p>
 
-    <!-- ✅ ALL ONGOING ORDERS (en préparation + prête) -->
+    <!-- ✅ ALL ACTIVE ORDERS (in preparation + ready) -->
     <section v-if="activeOrders.length" class="ongoing-list">
-      <article
-        v-for="order in activeOrders"
-        :key="order._id"
-        class="ongoing-card"
-      >
+      <article v-for="order in activeOrders" :key="order._id" class="ongoing-card">
         <div class="ongoing-top">
           <div class="ongoing-title-wrap">
             <p class="ongoing-title">Ongoing order</p>
@@ -33,47 +29,35 @@
             <div class="ongoing-status">
               <span
                 class="ongoing-dot"
-                :class="{
-                  'ongoing-dot--ready': statusLower(order.status) === 'prête'
-                }"
+                :class="{ 'ongoing-dot--ready': statusLower(order.status) === 'prête' }"
               ></span>
 
+              <!-- ✅ status EN (DB remains FR) -->
               <span class="ongoing-status-text">
-                {{ order.status || "en préparation" }}
+                {{ statusLabelEn(order.status) }}
               </span>
             </div>
           </div>
 
-          <!-- total (calculé items*qty si dispo, sinon fallback total_price_chf) -->
-          <p class="ongoing-total">
-            {{ formatCHF(orderComputedTotal(order)) }} CHF
-          </p>
+          <!-- ✅ PRICE ONLY ON TOP RIGHT -->
+          <p class="ongoing-total">{{ formatCHF(orderComputedTotal(order)) }} CHF</p>
         </div>
 
         <div class="ongoing-meta">
           <div class="ongoing-meta-row">
             <span class="ongoing-ico">📍</span>
-            <span class="ongoing-meta-text">
-              {{ shopLabel(order) }}
-            </span>
+            <span class="ongoing-meta-text">{{ shopLabel(order) }}</span>
           </div>
+
           <div class="ongoing-meta-row">
             <span class="ongoing-ico">⏰</span>
-            <span class="ongoing-meta-text">
-              Pick up at {{ pickupLabel(order) }}
-            </span>
+            <span class="ongoing-meta-text">Pick up at {{ pickupLabel(order) }}</span>
           </div>
         </div>
 
         <div class="ongoing-bottom">
-          <p class="ongoing-summary">
-            {{ orderSummary(order) }}
-          </p>
-
-          <!-- en bas à droite: TOTAL -->
-          <p class="ongoing-bottom-price">
-            {{ formatCHF(orderComputedTotal(order)) }} CHF
-          </p>
+          <p class="ongoing-summary">{{ orderSummary(order) }}</p>
+          <!-- ✅ removed duplicated bottom price -->
         </div>
       </article>
     </section>
@@ -105,7 +89,14 @@
           <p class="cart-item-meta">{{ formatCHF(item.unitPrice) }} CHF / unit</p>
 
           <div class="cart-qty-controls">
-            <button class="qty-btn" type="button" @click="decrease(item)" :disabled="item.quantity <= 1">−</button>
+            <button
+              class="qty-btn"
+              type="button"
+              @click="decrease(item)"
+              :disabled="item.quantity <= 1"
+            >
+              −
+            </button>
             <span class="qty-value">{{ item.quantity }}</span>
             <button class="qty-btn" type="button" @click="increase(item)">+</button>
 
@@ -128,14 +119,24 @@
         <span class="cart-total-amount">{{ formatCHF(totalPrice) }} CHF</span>
       </div>
 
-      <button class="cart-choose-btn" type="button" :disabled="cartItems.length === 0" @click="openStoreOverlay">
+      <button
+        class="cart-choose-btn"
+        type="button"
+        :disabled="cartItems.length === 0"
+        @click="openStoreOverlay"
+      >
         <div class="cart-choose-main">
           <span>Choose store</span>
           <span class="cart-choose-sub">{{ selectedStoreLabel }}</span>
         </div>
       </button>
 
-      <button class="cart-choose-btn" type="button" :disabled="cartItems.length === 0" @click="openTimeOverlay">
+      <button
+        class="cart-choose-btn"
+        type="button"
+        :disabled="cartItems.length === 0"
+        @click="openTimeOverlay"
+      >
         <div class="cart-choose-main">
           <span>Choose time</span>
           <span class="cart-choose-sub">{{ selectedTimeLabel }}</span>
@@ -205,6 +206,17 @@ function statusLower(s) {
   return String(s || "").toLowerCase().trim();
 }
 
+/* ✅ FR -> EN (DB stays FR) */
+const STATUS_TO_EN = {
+  "en préparation": "In preparation",
+  "prête": "Ready",
+  "récupérée": "Picked up",
+};
+function statusLabelEn(status) {
+  const s = String(status || "en préparation").toLowerCase().trim();
+  return STATUS_TO_EN[s] || "In preparation";
+}
+
 function minutesOf(hhmm) {
   const [h, m] = String(hhmm || "").split(":").map(Number);
   if (!Number.isFinite(h) || !Number.isFinite(m)) return null;
@@ -270,8 +282,7 @@ const ordersLoading = ref(false);
 const ordersError = ref("");
 const myOrders = ref([]);
 
-// cache items par orderId pour pas spammer l’API
-// orderItemsById[orderId] = [{ name, quantity, unitPrice }]
+// cache items by orderId
 const orderItemsById = ref({});
 
 async function loadMyOrders() {
@@ -282,7 +293,6 @@ async function loadMyOrders() {
 
   ordersLoading.value = true;
   try {
-    // ✅ endpoint OK chez toi
     const { data } = await api.get("/users/orders", { params: { page: 1, limit: 20 } });
     myOrders.value = Array.isArray(data?.orders) ? data.orders : [];
   } catch (e) {
@@ -293,13 +303,12 @@ async function loadMyOrders() {
   }
 }
 
-// ✅ commandes à afficher = tout sauf "récupérée"
+// ✅ display everything except "récupérée"
 const activeOrders = computed(() => {
   const list = Array.isArray(myOrders.value) ? myOrders.value : [];
   return list.filter((o) => statusLower(o?.status) !== "récupérée");
 });
 
-// charge les items pour chaque commande active (si pas déjà en cache)
 async function ensureOrderItemsLoaded(orderId) {
   if (!orderId) return;
   if (orderItemsById.value[orderId]) return;
@@ -314,17 +323,15 @@ async function ensureOrderItemsLoaded(orderId) {
         _key: it?._id || String(idx),
         name: it?.product_name || it?.product_id?.name || "Product",
         quantity: Number(it?.quantity) || 1,
-        unitPrice: Number(it?.final_price_chf) || 0, // prix unitaire
+        unitPrice: Number(it?.final_price_chf) || 0,
       })),
     };
   } catch (e) {
     console.error("Error loading items for order", orderId, e);
-    // on met un tableau vide pour éviter retry infini
     orderItemsById.value = { ...orderItemsById.value, [orderId]: [] };
   }
 }
 
-// à chaque refresh d’orders, on charge les items des commandes actives
 watch(
   activeOrders,
   (orders) => {
@@ -333,13 +340,12 @@ watch(
   { immediate: true }
 );
 
-// labels helpers
 function pickupLabel(order) {
   return order?.pickup ? toHHMM(order.pickup) : "—";
 }
 
 function shopLabel(order) {
-  const s = order?.store_id; // populate côté backend
+  const s = order?.store_id; // populate backend
   if (!s) return "—";
   const city = s?.address?.city;
   return city ? `${s.name} — ${city}` : s.name;
@@ -351,8 +357,6 @@ function orderItems(order) {
   return Array.isArray(orderItemsById.value[id]) ? orderItemsById.value[id] : [];
 }
 
-// total = sum(unitPrice * quantity)
-// fallback = total_price_chf si items pas encore chargés
 function orderComputedTotal(order) {
   const items = orderItems(order);
   if (items.length) {
@@ -370,7 +374,6 @@ function orderSummary(order) {
   const items = orderItems(order);
   if (!items.length) return "—";
 
-  // regroupe par nom
   const grouped = new Map();
   for (const it of items) {
     const name = it.name || "Product";
@@ -400,7 +403,7 @@ const selectedTimeLabel = computed(() => (selectedTime.value ? selectedTime.valu
 function openingHoursForToday(store) {
   const oh = store?.opening_hours;
   if (!Array.isArray(oh) || oh.length < 7) return null;
-  const day = new Date().getDay(); // 0..6 (dimanche=0)
+  const day = new Date().getDay(); // 0..6 (Sunday=0)
   const range = oh[day];
   if (!Array.isArray(range) || range.length < 2) return null;
   const [open, close] = range;
@@ -487,7 +490,6 @@ function goToOrderSummary() {
 /* ---------- lifecycle ---------- */
 async function refreshOrdersLight() {
   await loadMyOrders();
-  // note: les items des commandes actives se chargeront via le watch(activeOrders)
 }
 
 onMounted(async () => {
@@ -495,7 +497,6 @@ onMounted(async () => {
   await loadMyOrders();
 });
 
-// si ton onglet Order est dans <keep-alive>, ça refresh au retour
 onActivated(() => {
   refreshOrdersLight();
 });
@@ -513,7 +514,7 @@ onActivated(() => {
   color: #b00020;
 }
 
-/* ✅ list container (light) */
+/* list container */
 .ongoing-list {
   margin: 0;
   padding: 0;
@@ -550,10 +551,10 @@ onActivated(() => {
   width: 8px;
   height: 8px;
   border-radius: 999px;
-  background: #5f8f3e; /* en préparation */
+  background: #5f8f3e; /* in preparation */
 }
 .ongoing-dot--ready {
-  background: #f0b429; /* prête */
+  background: #f0b429; /* ready */
 }
 .ongoing-total {
   margin: 0;
@@ -583,13 +584,7 @@ onActivated(() => {
   font-size: 12px;
   color: #6d655a;
   line-height: 1.3;
-  max-width: 75%;
-}
-.ongoing-bottom-price {
-  margin: 0;
-  font-weight: 800;
-  font-size: 13px;
-  white-space: nowrap;
+  max-width: 100%;
 }
 
 /* cart thumbs */
