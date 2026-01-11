@@ -1717,3 +1717,24 @@ body {
   color: #b3261e;
   font-size: 12px;
 }
+
+/* =========================
+   REAL MOBILE FIX
+   ========================= */
+
+/* On enlève la coque téléphone sur vrais mobiles */
+@media (max-width: 480px) {
+  .phone-wrapper {
+    min-height: 100vh;
+    background: #ffffff;
+  }
+
+  .phone-shell {
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    max-height: none;
+    border-radius: 0;
+    box-shadow: none;
+  }
+}
