@@ -9,6 +9,7 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
+        id: '/',
         name: 'OCHA Matcha',
         short_name: 'OCHA',
         description: 'Commande de boissons matcha',

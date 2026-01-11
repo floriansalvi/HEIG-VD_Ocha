@@ -43,21 +43,27 @@ Application mobile pour la commande de boissons matcha. Développée avec **Vue 
 
 ## 🔐 Variables d'environnement
 
-Créer un fichier `.env.local` à la racine du projet avec les variables suivantes :
+### En développement local
+
+Créer un fichier `.env.local` à la racine du projet :
 
 ```env
-# API Backend
 VITE_API_URL=http://localhost:3000/api/v1
-
-# Optionnel - pour la production
-# VITE_API_URL=https://votre-api-deployee.com/api/v1
 ```
 
-### Notes sur les variables
+### En production (Render)
 
-- `VITE_API_URL` : URL de base pour les appels API (défaut: `http://localhost:3000/api/v1`)
+Ne pas utiliser `.env.local` sur Render. À la place, configurer directement dans l'UI Render (Environment Variables) :
+
+```
+VITE_API_URL=https://heig-vd-ocha-api.onrender.com/api/v1
+```
+
+### Notes
+
+- `VITE_API_URL` : URL de base pour les appels API
 - Les variables préfixées par `VITE_` sont exposées dans le navigateur
-- Ne jamais commiter le fichier `.env.local`
+- Ne jamais commiter le fichier `.env.local` (ajouter à `.gitignore` si ce n'est pas déjà fait)
 
 ---
 
@@ -97,7 +103,6 @@ src/
 npm run dev        # Lancer le serveur de développement
 npm run build      # Build pour la production
 npm run preview    # Aperçu du build de production
-npm run lint       # Vérifier le code (si configuré)
 ```
 
 ---
@@ -114,6 +119,17 @@ Le résultat se trouve dans le dossier `dist/` :
 - `dist/index.html` : Fichier principal
 - `dist/assets/` : JS, CSS bundles minifiés
 - Prêt pour déploiement statique
+
+### Tester le build en local (mode production)
+
+```bash
+npm run build
+npm run preview
+```
+
+Le serveur preview tourne généralement sur : **http://localhost:4173**
+
+Ceci permet de tester la PWA et les performances en mode production.
 
 ### Configuration Vite
 
@@ -135,8 +151,11 @@ Le résultat se trouve dans le dossier `dist/` :
    Publish Directory:  dist
    ```
 
-3. **Variables d'environnement**
-   - Ajouter `VITE_API_URL` avec l'URL de votre API déployée
+3. **Variables d'environnement (Render)**
+   ```
+   VITE_API_URL = https://heig-vd-ocha-api.onrender.com/api/v1
+   ```
+   (À configurer dans l'onglet "Environment" du service Render)
 
 4. **Deploy**
    - Chaque push sur `main` déclenche un build automatique
@@ -147,13 +166,12 @@ Le résultat se trouve dans le dossier `dist/` :
 
 ### 🌐 Frontend (Production)
 
-- **URL Render** : https://ocha-matcha.onrender.com
-- *À mettre à jour avec le lien réel de votre déploiement Render*
+- **URL Render** : https://heig-vd-ocha.onrender.com
 
 ### 🔌 Backend API (Production)
 
-- **URL API** : https://api.ocha-matcha.com/api/v1
-- *À mettre à jour avec le lien réel de votre API déployée*
+- **URL API** : https://heig-vd-ocha-api.onrender.com/api/v1
+- **VITE_API_URL (prod)** : https://heig-vd-ocha-api.onrender.com/api/v1
 - **Documentation API** : Voir le repository backend
 
 ### 📚 Autres ressources
@@ -185,6 +203,9 @@ cart.addItem({ productId: '1', name: 'Matcha', quantity: 1 });
 console.log(cart.items);
 ```
 
+L’architecture suit une séparation claire entre vues, composants UI,
+stores Pinia et services API (axios).
+
 ---
 
 ## 🔑 Authentification
@@ -193,14 +214,26 @@ console.log(cart.items);
 - **Intercepteur API** : Ajoute automatiquement `Authorization: Bearer <token>`
 - **Fallback** : Support legacy `access_token`
 
+Toutes les routes protégées sont gérées côté frontend via Vue Router (navigation guards)
+et côté backend via un token JWT.
+
 ---
 
 ## 📱 PWA (Progressive Web App)
 
-L'application est configurée comme PWA :
+Le projet utilise `vite-plugin-pwa`.
+
+- Le fichier `manifest.webmanifest` est **généré automatiquement** lors du build (il n'est pas forcément présent en dur dans `src/`).
+- L'application est installable (mode `standalone`) et le Service Worker est enregistré en `autoUpdate`.
+
+**Bonne pratique** : Définir `id: '/'` dans le manifest (sinon Chrome calcule l'ID automatiquement).
+
+Fonctionnalités :
 - ✅ Installable sur mobile/desktop
 - ✅ Fonctionne hors-ligne avec le Service Worker
-- ✅ Manifest et icônes incluses
+- ✅ Manifest généré au build
+
+La configuration PWA se trouve dans `vite.config.js` via `vite-plugin-pwa`.
 
 ---
 
@@ -226,6 +259,8 @@ npm run dev
 
 ## 📄 License
 
+Projet académique — HEIG-VD
+Usage pédagogique uniquement.
 
 ---
 
